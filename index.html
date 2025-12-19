@@ -223,8 +223,8 @@
         const qrContainer = document.getElementById('qr-hidden');
         qrContainer.innerHTML = "";
 
-        // Taille du QR code agrandie (environ 35% de la largeur du badge)
-        const qrSize = canvas.width * 0.35;
+        // Taille du QR code réduite (environ 28% de la largeur du badge)
+        const qrSize = canvas.width * 0.28;
 
         // Créer une vCard optimisée manuellement au lieu d'utiliser celle du CSV
         // Appliquer le formatage et retirer les accents pour réduire la taille du QR Code
@@ -299,10 +299,10 @@
             }
 
             // CALCUL DU CENTRAGE
-            // La "seconde partie" commence à la moitié de la largeur
+            // Centrer le QR code dans la partie droite du badge (entre 50% et 100%)
             const centerOfRightSide = (canvas.width * 0.75);
             const xPos = centerOfRightSide - (qrSize / 2);
-            const yPos = canvas.height * 0.35; // Position plus haute et centrée
+            const yPos = canvas.height * 0.35; // Position verticale centrée
 
             // Dessiner le QR code
             ctx.drawImage(qrImg, xPos, yPos, qrSize, qrSize);
@@ -382,7 +382,7 @@
             const qrContainer = document.getElementById('qr-hidden');
             qrContainer.innerHTML = "";
 
-            const qrSize = canvas.width * 0.35;
+            const qrSize = canvas.width * 0.28;
 
             const nomComplet = removeAccents((p.Noms || p.Nom || "").trim().toUpperCase());
             const prenomComplet = removeAccents(capitalize((p.Prénoms || p.Prénom || "").trim()));
