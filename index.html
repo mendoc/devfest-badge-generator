@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Générateur de Badges DevFest 2025 - Correctif</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: 'Google Sans', Arial, sans-serif; background: #e8f0fe; padding: 20px; color: #3c4043; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 10px; }
+        canvas { border: 2px solid #dadce0; max-width: 100%; height: auto; border-radius: 10px; margin-top: 10px; }
+        button { background: #1a73e8; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        button:hover { background: #1765cc; }
+        input[type="file"] { font-size: 0.9em; }
+        #qr-hidden { display: none; }
+        .status { font-size: 0.8em; color: #5f6368; margin-top: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Générateur de Badges DevFest Libreville</h2>
+    
+    <div class="controls">
+        <div>
+            <strong>1. Importer le Modèle PNG</strong><br>
+            <input type="file" id="bgInput" accept="image/*">
+        </div>
+        <div>
+            <strong>2. Importer le CSV</strong><br>
+            <input type="file" id="csvInput" accept=".csv">
+            <div id="csvStatus" class="status"></div>
+        </div>
+        <div id="selectZone" style="display:none;">
+            <strong>3. Sélectionner un membre</strong><br>
+            <select id="participantSelect" style="width: 100%; padding: 8px; margin-top:5px;"></select>
+        </div>
+    </div>
+
+    <div style="text-align: center;">
+        <button id="downloadBtn" style="display:none; margin-bottom: 15px;">Télécharger le Badge (PNG)</button><br>
+        <canvas id="badgeCanvas"></canvas>
+    </div>
+    
+    <div id="qr-hidden"></div>
+</div>
+
+<script>
+    const csvInput = document.getElementById('csvInput');
+    const bgInput = document.getElementById('bgInput');
+    const participantSelect = document.getElementById('participantSelect');
+    const canvas = document.getElementById('badgeCanvas');
+    const ctx = canvas.getContext('2d');
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    let participants = [];
+    let templateImg = new Image();
+    let qrLogoImg = new Image();
+
+    // Charger le logo pour le QR Code depuis le fichier local
+    qrLogoImg.src = "logo-qr.png";
+
+    bgInput.onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            templateImg.src = event.target.result;
+            templateImg.onload = () => {
+                canvas.width = templateImg.width;
+                canvas.height = templateImg.height;
+                ctx.drawImage(templateImg, 0, 0);
+            };
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    };
+
+    csvInput.onchange = (e) => {
+        Papa.parse(e.target.files[0], {
+            header: true,
+            skipEmptyLines: true,
+            encoding: "UTF-8", // Force l'encodage UTF-8
+            transformHeader: h => h.trim().replace(/^\ufeff/, ""), // Supprime le BOM et les espaces
+            complete: function(results) {
+                participants = results.data;
+                document.getElementById('csvStatus').textContent = `${participants.length} membres chargés.`;
+                populateSelect();
+                document.getElementById('selectZone').style.display = 'block';
+            }
+        });
+    };
+
+    function populateSelect() {
+        participantSelect.innerHTML = '<option value="">-- Choisir un participant --</option>';
+        participants.forEach((p, index) => {
+            let option = document.createElement('option');
+            option.value = index;
+            // On utilise les noms exacts de vos colonnes CSV
+            const displayName = (p.Prénoms || p.Prénom || p.prenom || "") + " " + (p.Noms || p.Nom || p.nom || "");
+            option.textContent = displayName.trim() || `Participant ${index + 1}`;
+            participantSelect.appendChild(option);
+        });
+    }
+
+    // Fonction pour capitaliser (première lettre majuscule, reste minuscules)
+    function capitalize(str) {
+        if (!str) return "";
+        return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+    }
+
+    // Fonction pour retirer les accents (pour QR Code seulement)
+    function removeAccents(str) {
+        if (!str) return "";
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    }
+
+    // Fonction pour découper le texte trop long en plusieurs lignes
+    function splitTextToFit(text, maxWidth, maxChars = null) {
+        // Nettoyer le texte : trim et remplacer espaces multiples par un seul espace
+        const cleanText = text.trim().replace(/\s+/g, ' ');
+        const words = cleanText.split(' ').filter(word => word.length > 0); // Filtrer les mots vides
+
+        if (words.length === 0) return [];
+
+        const lines = [];
+        let currentLine = words[0];
+
+        for (let i = 1; i < words.length; i++) {
+            const testLine = currentLine + ' ' + words[i];
+            const metrics = ctx.measureText(testLine);
+
+            // Vérifier à la fois la largeur ET le nombre de caractères
+            const exceedsWidth = metrics.width > maxWidth;
+            const exceedsChars = maxChars && testLine.length > maxChars;
+
+            if (exceedsWidth || exceedsChars) {
+                lines.push(currentLine);
+                currentLine = words[i];
+            } else {
+                currentLine = testLine;
+            }
+        }
+        lines.push(currentLine);
+        return lines;
+    }
+
+    // Fonction pour dessiner du texte multiligne et retourner la position Y finale
+    function drawMultilineText(text, x, startY, lineHeight, maxWidth, maxChars = null) {
+        const lines = splitTextToFit(text, maxWidth, maxChars);
+        let currentY = startY;
+
+        lines.forEach((line, index) => {
+            ctx.fillText(line, x, currentY);
+            currentY += lineHeight;
+        });
+
+        return currentY; // Retourne la position Y après le dernier texte
+    }
+
+    participantSelect.onchange = function() {
+        const p = participants[this.value];
+        if (!p || !templateImg.src) return;
+
+        // Nettoyage et dessin du fond
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(templateImg, 0, 0);
+
+        // --- PARTIE GAUCHE : TEXTE ---
+        ctx.fillStyle = "#000000";
+        ctx.textAlign = "left";
+
+        // Largeur maximale pour le texte (45% de la largeur du canvas pour laisser de l'espace)
+        const maxTextWidth = canvas.width * 0.45;
+        const xPos = canvas.width * 0.05;
+        let currentY = canvas.height * 0.44;
+
+        // Prénom (Gras, Capitalized) - Max 16 caractères par ligne
+        const prenom = capitalize(p.Prénoms || p.Prénom || p.prenom || "");
+        const prenomFontSize = canvas.height * 0.05;
+        ctx.font = "bold " + prenomFontSize + "px Roboto, sans-serif";
+        currentY = drawMultilineText(prenom, xPos, currentY, prenomFontSize * 1.2, maxTextWidth, 16);
+
+        // Nom (Gras, MAJUSCULES) - Max 12 caractères par ligne
+        const nom = (p.Noms || p.Nom || p.nom || "").toUpperCase();
+        const nomFontSize = canvas.height * 0.05;
+        ctx.font = "bold " + nomFontSize + "px Roboto, sans-serif";
+        currentY = drawMultilineText(nom, xPos, currentY, nomFontSize * 1.2, maxTextWidth, 12);
+
+        // Position fixe pour rôle et pole (comme si nom/prénom prenaient toujours 3 lignes)
+        // Calcul : position de départ + 3 lignes * hauteur de ligne + espacement
+        const fixedRoleY = canvas.height * 0.44 + (3 * prenomFontSize * 1.2) + canvas.height * 0.02;
+
+        // Fonction & Organisation (Normal) - Position fixe
+        const detailsFontSize = canvas.height * 0.03;
+        ctx.font = detailsFontSize + "px Roboto, sans-serif";
+        ctx.fillStyle = "#3c4043";
+
+        const role = p.Rôle || p.Fonction || p.fonction || "";
+        let roleY = drawMultilineText(role, xPos, fixedRoleY, detailsFontSize * 1.3, maxTextWidth);
+
+        const pole = p.Pole || p.Organisation || p.organisation || "";
+        drawMultilineText(pole, xPos, roleY, detailsFontSize * 1.3, maxTextWidth);
+
+        // --- PARTIE DROITE : QR CODE ---
+        const qrContainer = document.getElementById('qr-hidden');
+        qrContainer.innerHTML = "";
+
+        // Taille du QR code agrandie (environ 35% de la largeur du badge)
+        const qrSize = canvas.width * 0.35;
+
+        // Créer une vCard optimisée manuellement au lieu d'utiliser celle du CSV
+        // Appliquer le formatage et retirer les accents pour réduire la taille du QR Code
+        const nomComplet = removeAccents((p.Noms || p.Nom || "").trim().toUpperCase());
+        const prenomComplet = removeAccents(capitalize((p.Prénoms || p.Prénom || "").trim()));
+        const tel = (p.Tel || "").trim();
+        const email = removeAccents((p.Mail || p.Email || "").trim());
+
+        // Construire une vCard minimaliste
+        let qrData = "BEGIN:VCARD\n";
+        qrData += "VERSION:3.0\n";
+
+        if (nomComplet || prenomComplet) {
+            qrData += `N:${nomComplet};${prenomComplet}\n`;
+            qrData += `FN:${prenomComplet} ${nomComplet}\n`;
+        }
+
+        if (tel) {
+            qrData += `TEL;CELL:${tel}\n`;
+        }
+
+        if (email) {
+            qrData += `EMAIL:${email}\n`;
+        }
+
+        qrData += "END:VCARD";
+
+        // Normaliser les caractères pour assurer la compatibilité UTF-8
+        if (qrData && typeof qrData === 'string') {
+            qrData = qrData.normalize('NFC');
+        }
+
+        try {
+            new QRCode(qrContainer, {
+                text: qrData,
+                width: qrSize,
+                height: qrSize,
+                colorDark : "#000000",
+                colorLight : "rgba(255,255,255,0)", // Transparent
+                correctLevel : QRCode.CorrectLevel.M  // M au lieu de H pour supporter les vCards plus longues
+            });
+        } catch (error) {
+            // En cas d'erreur, essayer avec le niveau de correction le plus bas
+            try {
+                new QRCode(qrContainer, {
+                    text: qrData,
+                    width: qrSize,
+                    height: qrSize,
+                    colorDark : "#000000",
+                    colorLight : "rgba(255,255,255,0)",
+                    correctLevel : QRCode.CorrectLevel.L  // Low pour les vCards très longues
+                });
+            } catch (e2) {
+                // Dernier recours : URL par défaut
+                new QRCode(qrContainer, {
+                    text: "https://devfest.gdglibreville.com",
+                    width: qrSize,
+                    height: qrSize,
+                    colorDark : "#000000",
+                    colorLight : "rgba(255,255,255,0)",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+            }
+        }
+
+        setTimeout(() => {
+            const qrImg = qrContainer.querySelector('img');
+
+            if (!qrImg) {
+                downloadBtn.style.display = 'inline-block';
+                return;
+            }
+
+            // CALCUL DU CENTRAGE
+            // La "seconde partie" commence à la moitié de la largeur
+            const centerOfRightSide = (canvas.width * 0.75);
+            const xPos = centerOfRightSide - (qrSize / 2);
+            const yPos = canvas.height * 0.35; // Position plus haute et centrée
+
+            // Dessiner le QR code
+            ctx.drawImage(qrImg, xPos, yPos, qrSize, qrSize);
+
+            // Ajouter le logo au centre du QR Code (30% de la taille du QR pour meilleure visibilité)
+            const logoSize = qrSize * 0.30;
+            const logoX = xPos + (qrSize / 2) - (logoSize / 2);
+            const logoY = yPos + (qrSize / 2) - (logoSize / 2);
+
+            // Améliorer la qualité du rendu du logo
+            if (qrLogoImg.complete && qrLogoImg.naturalHeight !== 0) {
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                ctx.drawImage(qrLogoImg, logoX, logoY, logoSize, logoSize);
+            }
+
+            downloadBtn.style.display = 'inline-block';
+        }, 300);
+    };
+
+    downloadBtn.onclick = () => {
+        const name = participantSelect.selectedOptions[0].textContent.replace(/\s+/g, '_');
+        const link = document.createElement('a');
+        link.download = `Badge_DevFest_${name}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    };
+</script>
+
+</body>
+</html>
