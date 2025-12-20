@@ -302,7 +302,7 @@
             // Centrer le QR code dans la partie droite du badge (entre 50% et 100%)
             const centerOfRightSide = (canvas.width * 0.75);
             const xPos = centerOfRightSide - (qrSize / 2);
-            const yPos = canvas.height * 0.35; // Position verticale centrée
+            const yPos = canvas.height * 0.32; // Position verticale
 
             // Dessiner le QR code
             ctx.drawImage(qrImg, xPos, yPos, qrSize, qrSize);
@@ -448,7 +448,7 @@
                 if (qrImg) {
                     const centerOfRightSide = (canvas.width * 0.75);
                     const xPos = centerOfRightSide - (qrSize / 2);
-                    const yPos = canvas.height * 0.35;
+                    const yPos = canvas.height * 0.32;
 
                     ctx.drawImage(qrImg, xPos, yPos, qrSize, qrSize);
 
@@ -480,23 +480,68 @@
         btn.textContent = `Génération en cours... (0/${participants.length})`;
 
         const { jsPDF } = window.jspdf;
+
+        // Format A4 en points (72 DPI standard PDF)
+        // A4 portrait : 595 x 842 points (210 x 297 mm)
         const pdf = new jsPDF({
-            orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
-            unit: 'px',
-            format: [canvas.width, canvas.height]
+            orientation: 'portrait',
+            unit: 'pt',
+            format: 'a4'
         });
+
+        const pageWidth = 595;   // A4 portrait
+        const pageHeight = 842;
+
+        // Calculer la taille des badges pour en mettre 2 par page (verticalement)
+        // On garde un ratio et on centre les badges
+        const margin = 20;
+        const availableWidth = pageWidth - 2 * margin;
+        const availableHeight = (pageHeight - 3 * margin) / 2; // Espace pour 2 badges verticalement
+
+        // Calculer la taille du badge en maintenant le ratio
+        const badgeRatio = canvas.width / canvas.height;
+        let badgeWidth, badgeHeight;
+
+        if (availableWidth / availableHeight > badgeRatio) {
+            badgeHeight = availableHeight;
+            badgeWidth = badgeHeight * badgeRatio;
+        } else {
+            badgeWidth = availableWidth;
+            badgeHeight = badgeWidth / badgeRatio;
+        }
+
+        let badgeCount = 0;
+        let pageCreated = false;
 
         for (let i = 0; i < participants.length; i++) {
             await generateBadgeForParticipant(participants[i]);
 
             const imgData = canvas.toDataURL('image/png');
 
-            if (i > 0) {
-                pdf.addPage([canvas.width, canvas.height], canvas.width > canvas.height ? 'landscape' : 'portrait');
+            // Position du badge (0 = haut, 1 = bas)
+            const position = badgeCount % 2;
+
+            // Créer une nouvelle page tous les 2 badges
+            if (position === 0 && badgeCount > 0) {
+                pdf.addPage('a4', 'portrait');
             }
 
-            pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+            // Centrer horizontalement
+            const xPos = margin + (availableWidth - badgeWidth) / 2;
 
+            // Calculer position Y (haut ou bas)
+            let yPos;
+            if (position === 0) {
+                // Badge du haut
+                yPos = margin;
+            } else {
+                // Badge du bas
+                yPos = margin * 2 + badgeHeight;
+            }
+
+            pdf.addImage(imgData, 'PNG', xPos, yPos, badgeWidth, badgeHeight);
+
+            badgeCount++;
             btn.textContent = `Génération en cours... (${i + 1}/${participants.length})`;
         }
 
@@ -505,7 +550,8 @@
         btn.disabled = false;
         btn.textContent = 'Télécharger tous les badges (PDF)';
 
-        alert(`${participants.length} badges générés avec succès !`);
+        const totalPages = Math.ceil(participants.length / 2);
+        alert(`${participants.length} badges générés sur ${totalPages} pages A4 !`);
     };
 </script>
 

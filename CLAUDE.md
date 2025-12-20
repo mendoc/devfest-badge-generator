@@ -15,6 +15,7 @@ Single-page application architecture:
 - External dependencies loaded via CDN:
   - PapaParse 5.3.2 (CSV parsing with UTF-8 encoding)
   - QRCode.js 1.0.0 (QR code generation)
+  - jsPDF 2.5.1 (PDF generation for batch export)
 
 ## Key Components
 
@@ -30,9 +31,10 @@ Single-page application architecture:
 **Dynamic positioning with text wrapping**:
 - Text starts at `canvas.height * 0.44` (adjustable)
 - Maximum width: 45% of canvas width
-- Maximum characters per line: 12 (for names)
+- Maximum characters per line: 16 for prénoms, 12 for noms
 - Automatic line breaking by word boundaries
-- Position tracking for dynamic layout (role and organization adjust based on name length)
+- Fixed positioning for role and pole (calculated as if name takes 3 lines)
+- Role text hidden (white color) when name + prénom exceed 3 lines to prevent overlap
 
 **Text formatting**:
 - **Prénoms**: Capitalized (first letter uppercase, rest lowercase) - Bold, 5% canvas height
@@ -49,8 +51,8 @@ Single-page application architecture:
 ### QR Code system
 
 **Specifications**:
-- Size: 35% of canvas width
-- Position: Centered in right half of badge at `canvas.height * 0.35`
+- Size: 28% of canvas width
+- Position: Horizontally centered at 75% of canvas width, vertically at `canvas.height * 0.32`
 - Error correction level: M (Medium - 15% recovery) with fallback to L (Low - 7%)
 - Logo overlay: 30% of QR code size, centered, with high-quality rendering
 
@@ -93,7 +95,10 @@ Single-page application architecture:
 - Accents are preserved in displayed text but removed in QR code data to prevent overflow
 
 ### Text wrapping
-When names exceed 12 characters, they automatically wrap to multiple lines, and subsequent fields (role, organization) shift down accordingly.
+- Prénoms wrap when exceeding 16 characters per line
+- Noms wrap when exceeding 12 characters per line
+- Role and pole have fixed positions (as if name takes exactly 3 lines)
+- When total name lines exceed 3, role text becomes white (invisible) to prevent overlap with pole
 
 ### QR Code capacity limits
 QRCode.js has maximum data capacity limits:
@@ -110,7 +115,9 @@ Open `index.html` directly in a modern browser (Chrome, Firefox, Edge). No local
 2. Load participant CSV file
 3. Select participant from dropdown
 4. Badge renders with dynamic text layout and QR code
-5. Download generated badge as PNG
+5. Download options:
+   - Individual badge as PNG
+   - All badges as PDF (2 badges per A4 portrait page, stacked vertically)
 
 ## Files in Project
 
