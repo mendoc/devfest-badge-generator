@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Générateur de Badges DevFest 2025 - Correctif</title>
+    <title>Baba - Badge Generator</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
@@ -10,44 +10,344 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        body { font-family: 'Google Sans', Arial, sans-serif; background: #e8f0fe; padding: 20px; color: #3c4043; }
-        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
-        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 10px; }
-        canvas { border: 2px solid #dadce0; max-width: 100%; height: auto; border-radius: 10px; margin-top: 10px; }
-        button { background: #1a73e8; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
-        button:hover { background: #1765cc; }
-        input[type="file"] { font-size: 0.9em; }
-        #qr-hidden { display: none; }
-        .status { font-size: 0.8em; color: #5f6368; margin-top: 5px; }
+        :root {
+            --bg-primary: #0d0f14;
+            --bg-secondary: #161921;
+            --bg-tertiary: #1f2229;
+            --border-color: #2d3139;
+            --text-primary: #e5e7eb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-primary: #6366f1;
+            --accent-hover: #4f46e5;
+            --accent-light: rgba(99, 102, 241, 0.1);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .app-header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-progress {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .participant-count {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.625rem;
+            background: var(--accent-light);
+            border: 1px solid var(--accent-primary);
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .card-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+            background: var(--bg-tertiary);
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent-primary);
+            background: var(--accent-light);
+        }
+
+        .upload-area.active {
+            border-color: var(--accent-primary);
+            background: var(--accent-light);
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        .upload-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-primary:disabled {
+            background: var(--bg-tertiary);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-primary);
+        }
+
+        .select-wrapper {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            appearance: none;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+
+        .status.success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status.warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .status.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .preview-area {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--radius-md);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        #qr-hidden {
+            display: none;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid var(--bg-tertiary);
+            border-top-color: var(--accent-primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
 
+<header class="app-header">
+    <h1>Baba</h1>
+    <div id="progressIndicator" class="header-progress"></div>
+</header>
+
 <div class="container">
-    <h2>Générateur de Badges DevFest Libreville</h2>
-    
-    <div class="controls">
-        <div>
-            <strong>1. Importer le Modèle PNG</strong><br>
+    <!-- Step 1: Template Upload -->
+    <div class="card" id="templateCard">
+        <div class="card-header">
+            <h2 class="card-title">Modèle de badge</h2>
+            <p class="card-description">Importez votre template PNG de badge. Ce sera la base sur laquelle les informations seront ajoutées.</p>
+        </div>
+        <div class="upload-area" id="templateUploadArea">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">Cliquez pour sélectionner ou glissez-déposez</div>
+            <div class="upload-hint">PNG, JPG jusqu'à 10MB</div>
             <input type="file" id="bgInput" accept="image/*">
         </div>
-        <div>
-            <strong>2. Importer le CSV</strong><br>
-            <input type="file" id="csvInput" accept=".csv">
-            <div id="csvStatus" class="status"></div>
+        <div id="templateStatus"></div>
+    </div>
+
+    <!-- Step 2: CSV Upload -->
+    <div class="card" id="csvCard">
+        <div class="card-header">
+            <h2 class="card-title">Données des participants</h2>
+            <p class="card-description">Importez le fichier CSV contenant les informations des participants (nom, prénom, email, etc.)</p>
         </div>
-        <div id="selectZone" style="display:none;">
-            <strong>3. Sélectionner un membre</strong><br>
-            <select id="participantSelect" style="width: 100%; padding: 8px; margin-top:5px;"></select>
+        <div class="upload-area" id="csvUploadArea">
+            <div class="upload-icon">📊</div>
+            <div class="upload-text">Cliquez pour sélectionner ou glissez-déposez</div>
+            <div class="upload-hint">Fichier CSV avec en-têtes</div>
+            <input type="file" id="csvInput" accept=".csv">
+        </div>
+        <div id="csvStatus"></div>
+    </div>
+
+    <!-- Step 3: Preview & Generate -->
+    <div class="card hidden" id="previewCard">
+        <div class="card-header">
+            <h2 class="card-title">Prévisualisation et génération</h2>
+            <p class="card-description">Sélectionnez un participant pour prévisualiser son badge</p>
+        </div>
+
+        <div class="select-wrapper">
+            <select id="participantSelect">
+                <option value="">Sélectionner un participant...</option>
+            </select>
+        </div>
+
+        <div class="preview-area">
+            <canvas id="badgeCanvas"></canvas>
+        </div>
+
+        <div class="actions">
+            <button class="btn btn-secondary" id="downloadBtn" disabled>
+                <span>⬇</span> Télécharger ce badge (PNG)
+            </button>
+            <button class="btn btn-primary" id="downloadAllBtn" disabled>
+                <span>📦</span> Télécharger tous les badges (PDF)
+            </button>
         </div>
     </div>
 
-    <div style="text-align: center;">
-        <button id="downloadBtn" style="display:none; margin-bottom: 15px;">Télécharger le Badge (PNG)</button>
-        <button id="downloadAllBtn" style="display:none; margin-bottom: 15px; margin-left: 10px;">Télécharger tous les badges (PDF)</button><br>
-        <canvas id="badgeCanvas"></canvas>
-    </div>
-    
     <div id="qr-hidden"></div>
 </div>
 
@@ -66,7 +366,120 @@
     // Charger le logo pour le QR Code depuis le fichier local
     qrLogoImg.src = "logo-qr.png";
 
+    // Système de détection automatique des colonnes CSV
+    const columnMappings = {
+        prenom: ['Prénoms', 'Prénom', 'prenom', 'First Name', 'first_name', 'firstname', 'FirstName'],
+        nom: ['Noms', 'Nom', 'nom', 'Last Name', 'last_name', 'lastname', 'LastName'],
+        nomComplet: ['Nom complet', 'Full Name', 'fullname', 'Name', 'name'],
+        email: ['Mail', 'Email', 'email', 'E-mail', 'e-mail', 'Quel est votre email ?', 'Adresse email'],
+        tel: ['Tel', 'Téléphone', 'Telephone', 'Phone', 'phone', 'Quel est votre numéro de téléphone ?', 'phone_number', 'PhoneNumber'],
+        role: ['Rôle', 'Role', 'role', 'Fonction', 'Function', 'fonction', 'Statut actuel', 'Title', 'Position', 'Job Title'],
+        pole: ['Pole', 'Pôle', 'pole', 'Organisation', 'Organization', 'organisation', 'organization', 'What company or organization are you a part of, if any?', 'Domaine d\'activité / d\'étude', 'Company', 'Entreprise']
+    };
+
+    // Fonction pour récupérer intelligemment une valeur depuis un participant
+    function smartGetField(participant, fieldType) {
+        const possibleColumns = columnMappings[fieldType] || [];
+
+        for (let columnName of possibleColumns) {
+            if (participant[columnName] !== undefined && participant[columnName] !== null && participant[columnName] !== '') {
+                return participant[columnName];
+            }
+        }
+
+        // Cas spécial : si on cherche prénom ou nom et qu'on n'a que le nom complet
+        if (fieldType === 'prenom' || fieldType === 'nom') {
+            // Vérifier si on a des colonnes prénom/nom (sans appeler smartGetField pour éviter la récursion)
+            let hasPrenomOrNom = false;
+            for (let col of [...columnMappings.prenom, ...columnMappings.nom]) {
+                if (participant[col]) {
+                    hasPrenomOrNom = true;
+                    break;
+                }
+            }
+
+            // Si on n'a ni prénom ni nom, essayer de splitter le nom complet
+            if (!hasPrenomOrNom) {
+                for (let col of columnMappings.nomComplet) {
+                    const fullName = participant[col];
+                    if (fullName && fullName.trim()) {
+                        const parts = fullName.trim().split(/\s+/);
+                        if (fieldType === 'prenom') {
+                            return parts.slice(0, -1).join(' '); // Tout sauf le dernier mot
+                        } else if (fieldType === 'nom') {
+                            return parts[parts.length - 1]; // Dernier mot
+                        }
+                    }
+                }
+            }
+        }
+
+        return "";
+    }
+
+    // Step management
+    function updateStep(stepNumber, participantCount = 0) {
+        const progressIndicator = document.getElementById('progressIndicator');
+        const stepTexts = [
+            '',
+            'Étape 1/3 : Charger le template',
+            'Étape 2/3 : Importer les données',
+            'Étape 3/3 : Générer les badges'
+        ];
+
+        let progressHTML = stepTexts[stepNumber] || '';
+
+        // Add participant count badge if we have participants
+        if (stepNumber === 3 && participantCount > 0) {
+            progressHTML += ` <span class="participant-count">${participantCount} participant${participantCount > 1 ? 's' : ''}</span>`;
+        }
+
+        progressIndicator.innerHTML = progressHTML;
+
+        // Hide completed cards
+        if (stepNumber > 1) {
+            document.getElementById('templateCard').classList.add('hidden');
+        }
+        if (stepNumber > 2) {
+            document.getElementById('csvCard').classList.add('hidden');
+        }
+    }
+
+    function showStatus(elementId, message, type = 'success') {
+        const statusEl = document.getElementById(elementId);
+        statusEl.innerHTML = `<div class="status ${type}">${message}</div>`;
+    }
+
+    // Template upload with drag & drop
+    const templateUploadArea = document.getElementById('templateUploadArea');
+
+    templateUploadArea.addEventListener('click', () => bgInput.click());
+
+    templateUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        templateUploadArea.classList.add('active');
+    });
+
+    templateUploadArea.addEventListener('dragleave', () => {
+        templateUploadArea.classList.remove('active');
+    });
+
+    templateUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        templateUploadArea.classList.remove('active');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            bgInput.files = e.dataTransfer.files;
+            bgInput.dispatchEvent(new Event('change'));
+        }
+    });
+
     bgInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        showStatus('templateStatus', '⏳ Chargement du template...', 'warning');
+
         const reader = new FileReader();
         reader.onload = (event) => {
             templateImg.src = event.target.result;
@@ -74,38 +487,97 @@
                 canvas.width = templateImg.width;
                 canvas.height = templateImg.height;
                 ctx.drawImage(templateImg, 0, 0);
+
+                showStatus('templateStatus', `✓ Template chargé (${canvas.width}x${canvas.height}px)`, 'success');
+                updateStep(2);
             };
         };
-        reader.readAsDataURL(e.target.files[0]);
+        reader.readAsDataURL(file);
     };
 
+    // CSV upload with drag & drop
+    const csvUploadArea = document.getElementById('csvUploadArea');
+
+    csvUploadArea.addEventListener('click', () => csvInput.click());
+
+    csvUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        csvUploadArea.classList.add('active');
+    });
+
+    csvUploadArea.addEventListener('dragleave', () => {
+        csvUploadArea.classList.remove('active');
+    });
+
+    csvUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        csvUploadArea.classList.remove('active');
+        const file = e.dataTransfer.files[0];
+        if (file && file.name.endsWith('.csv')) {
+            csvInput.files = e.dataTransfer.files;
+            csvInput.dispatchEvent(new Event('change'));
+        }
+    });
+
     csvInput.onchange = (e) => {
-        Papa.parse(e.target.files[0], {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        showStatus('csvStatus', '⏳ Analyse du fichier CSV...', 'warning');
+
+        Papa.parse(file, {
             header: true,
             skipEmptyLines: true,
-            encoding: "UTF-8", // Force l'encodage UTF-8
-            transformHeader: h => h.trim().replace(/^\ufeff/, ""), // Supprime le BOM et les espaces
+            encoding: "UTF-8",
+            transformHeader: h => h.trim().replace(/^\ufeff/, ""),
             complete: function(results) {
                 participants = results.data;
-                document.getElementById('csvStatus').textContent = `${participants.length} membres chargés.`;
+
+                if (participants.length === 0) {
+                    showStatus('csvStatus', '⚠ Aucune donnée trouvée dans le CSV', 'error');
+                    return;
+                }
+
+                showStatus('csvStatus', `✓ ${participants.length} participant(s) chargé(s)`, 'success');
                 populateSelect();
-                document.getElementById('selectZone').style.display = 'block';
-                document.getElementById('downloadAllBtn').style.display = 'inline-block';
+
+                // Show preview card
+                document.getElementById('previewCard').classList.remove('hidden');
+                updateStep(3, participants.length);
+
+                // Enable download all button
+                document.getElementById('downloadAllBtn').disabled = false;
+
+                // Auto-select first participant
+                if (participants.length > 0) {
+                    participantSelect.value = '0';
+                    participantSelect.dispatchEvent(new Event('change'));
+                }
+            },
+            error: function(error) {
+                showStatus('csvStatus', `✗ Erreur: ${error.message}`, 'error');
             }
         });
     };
 
     function populateSelect() {
-        participantSelect.innerHTML = '<option value="">-- Choisir un participant --</option>';
+        participantSelect.innerHTML = '<option value="">Sélectionner un participant...</option>';
         participants.forEach((p, index) => {
             let option = document.createElement('option');
             option.value = index;
-            // On utilise les noms exacts de vos colonnes CSV
-            const displayName = (p.Prénoms || p.Prénom || p.prenom || "") + " " + (p.Noms || p.Nom || p.nom || "");
-            option.textContent = displayName.trim() || `Participant ${index + 1}`;
+
+            // Utilisation du système de détection intelligent
+            const prenom = smartGetField(p, 'prenom');
+            const nom = smartGetField(p, 'nom');
+            const displayName = `${prenom} ${nom}`.trim();
+
+            option.textContent = displayName || `Participant ${index + 1}`;
             participantSelect.appendChild(option);
         });
     }
+
+    // Initialize first step as active
+    updateStep(1);
 
     // Fonction pour capitaliser (première lettre majuscule, reste minuscules)
     function capitalize(str) {
@@ -164,7 +636,11 @@
 
     participantSelect.onchange = function() {
         const p = participants[this.value];
-        if (!p || !templateImg.src) return;
+
+        if (!p || !templateImg.src) {
+            downloadBtn.disabled = true;
+            return;
+        }
 
         // Nettoyage et dessin du fond
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -180,7 +656,7 @@
         let currentY = canvas.height * 0.44;
 
         // Prénom (Gras, Capitalized) - Max 16 caractères par ligne
-        const prenom = capitalize(p.Prénoms || p.Prénom || p.prenom || "");
+        const prenom = capitalize(smartGetField(p, 'prenom'));
         const prenomFontSize = canvas.height * 0.05;
         ctx.font = "bold " + prenomFontSize + "px Roboto, sans-serif";
 
@@ -189,7 +665,7 @@
         currentY = drawMultilineText(prenom, xPos, currentY, prenomFontSize * 1.2, maxTextWidth, 16);
 
         // Nom (Gras, MAJUSCULES) - Max 12 caractères par ligne
-        const nom = (p.Noms || p.Nom || p.nom || "").toUpperCase();
+        const nom = smartGetField(p, 'nom').toUpperCase();
         const nomFontSize = canvas.height * 0.05;
         ctx.font = "bold " + nomFontSize + "px Roboto, sans-serif";
 
@@ -211,12 +687,12 @@
         // Changer la couleur du rôle en blanc si 4 lignes ou plus
         ctx.fillStyle = totalLines >= 4 ? "#ffffff" : "#3c4043";
 
-        const role = p.Rôle || p.Fonction || p.fonction || "";
+        const role = smartGetField(p, 'role');
         let roleY = drawMultilineText(role, xPos, fixedRoleY, detailsFontSize * 1.3, maxTextWidth);
 
         // Le pole garde toujours sa couleur normale
         ctx.fillStyle = "#3c4043";
-        const pole = p.Pole || p.Organisation || p.organisation || "";
+        const pole = smartGetField(p, 'pole');
         drawMultilineText(pole, xPos, roleY, detailsFontSize * 1.3, maxTextWidth);
 
         // --- PARTIE DROITE : QR CODE ---
@@ -228,10 +704,10 @@
 
         // Créer une vCard optimisée manuellement au lieu d'utiliser celle du CSV
         // Appliquer le formatage et retirer les accents pour réduire la taille du QR Code
-        const nomComplet = removeAccents((p.Noms || p.Nom || "").trim().toUpperCase());
-        const prenomComplet = removeAccents(capitalize((p.Prénoms || p.Prénom || "").trim()));
-        const tel = (p.Tel || "").trim();
-        const email = removeAccents((p.Mail || p.Email || "").trim());
+        const nomComplet = removeAccents(smartGetField(p, 'nom').toUpperCase());
+        const prenomComplet = removeAccents(capitalize(smartGetField(p, 'prenom')));
+        const tel = smartGetField(p, 'tel').trim();
+        const email = removeAccents(smartGetField(p, 'email').trim());
 
         // Construire une vCard minimaliste
         let qrData = "BEGIN:VCARD\n";
@@ -294,7 +770,7 @@
             const qrImg = qrContainer.querySelector('img');
 
             if (!qrImg) {
-                downloadBtn.style.display = 'inline-block';
+                downloadBtn.disabled = false;
                 return;
             }
 
@@ -319,7 +795,7 @@
                 ctx.drawImage(qrLogoImg, logoX, logoY, logoSize, logoSize);
             }
 
-            downloadBtn.style.display = 'inline-block';
+            downloadBtn.disabled = false;
         }, 300);
     };
 
@@ -347,7 +823,7 @@
             let currentY = canvas.height * 0.44;
 
             // Prénom (Gras, Capitalized) - Max 16 caractères par ligne
-            const prenom = capitalize(p.Prénoms || p.Prénom || p.prenom || "");
+            const prenom = capitalize(smartGetField(p, 'prenom'));
             const prenomFontSize = canvas.height * 0.05;
             ctx.font = "bold " + prenomFontSize + "px Roboto, sans-serif";
 
@@ -355,7 +831,7 @@
             currentY = drawMultilineText(prenom, xPos, currentY, prenomFontSize * 1.2, maxTextWidth, 16);
 
             // Nom (Gras, MAJUSCULES) - Max 12 caractères par ligne
-            const nom = (p.Noms || p.Nom || p.nom || "").toUpperCase();
+            const nom = smartGetField(p, 'nom').toUpperCase();
             const nomFontSize = canvas.height * 0.05;
             ctx.font = "bold " + nomFontSize + "px Roboto, sans-serif";
 
@@ -371,11 +847,11 @@
 
             ctx.fillStyle = totalLines >= 4 ? "#ffffff" : "#3c4043";
 
-            const role = p.Rôle || p.Fonction || p.fonction || "";
+            const role = smartGetField(p, 'role');
             let roleY = drawMultilineText(role, xPos, fixedRoleY, detailsFontSize * 1.3, maxTextWidth);
 
             ctx.fillStyle = "#3c4043";
-            const pole = p.Pole || p.Organisation || p.organisation || "";
+            const pole = smartGetField(p, 'pole');
             drawMultilineText(pole, xPos, roleY, detailsFontSize * 1.3, maxTextWidth);
 
             // --- PARTIE DROITE : QR CODE ---
@@ -384,10 +860,10 @@
 
             const qrSize = canvas.width * 0.28;
 
-            const nomComplet = removeAccents((p.Noms || p.Nom || "").trim().toUpperCase());
-            const prenomComplet = removeAccents(capitalize((p.Prénoms || p.Prénom || "").trim()));
-            const tel = (p.Tel || "").trim();
-            const email = removeAccents((p.Mail || p.Email || "").trim());
+            const nomComplet = removeAccents(smartGetField(p, 'nom').toUpperCase());
+            const prenomComplet = removeAccents(capitalize(smartGetField(p, 'prenom')));
+            const tel = smartGetField(p, 'tel').trim();
+            const email = removeAccents(smartGetField(p, 'email').trim());
 
             let qrData = "BEGIN:VCARD\n";
             qrData += "VERSION:3.0\n";
@@ -471,13 +947,13 @@
     // Bouton pour télécharger tous les badges en PDF
     document.getElementById('downloadAllBtn').onclick = async () => {
         if (!templateImg.src || participants.length === 0) {
-            alert("Veuillez d'abord charger un template et un fichier CSV.");
             return;
         }
 
         const btn = document.getElementById('downloadAllBtn');
+        const originalContent = btn.innerHTML;
         btn.disabled = true;
-        btn.textContent = `Génération en cours... (0/${participants.length})`;
+        btn.innerHTML = '<span class="loading"></span> Génération en cours... (0/' + participants.length + ')';
 
         const { jsPDF } = window.jspdf;
 
@@ -542,16 +1018,16 @@
             pdf.addImage(imgData, 'PNG', xPos, yPos, badgeWidth, badgeHeight);
 
             badgeCount++;
-            btn.textContent = `Génération en cours... (${i + 1}/${participants.length})`;
+            btn.innerHTML = `<span class="loading"></span> Génération en cours... (${i + 1}/${participants.length})`;
         }
 
         pdf.save('Badges_DevFest_2025.pdf');
 
         btn.disabled = false;
-        btn.textContent = 'Télécharger tous les badges (PDF)';
+        btn.innerHTML = originalContent;
 
         const totalPages = Math.ceil(participants.length / 2);
-        alert(`${participants.length} badges générés sur ${totalPages} pages A4 !`);
+        showStatus('csvStatus', `✓ ${participants.length} badges générés sur ${totalPages} pages A4`, 'success');
     };
 </script>
 

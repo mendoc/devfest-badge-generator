@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-DevFest Libreville 2025 Badge Generator - A client-side web application for generating personalized event badges. The application loads a badge template image and participant data from CSV, then overlays participant information (name, function, organization) and a QR code with vCard contact data onto the template.
+**Baba** - A professional badge generator for events. Client-side web application with modern UI for generating personalized event badges. The application loads a badge template image and participant data from CSV, then overlays participant information (name, function, organization) and a QR code with vCard contact data onto the template.
 
 ## Architecture
 
@@ -16,6 +16,34 @@ Single-page application architecture:
   - PapaParse 5.3.2 (CSV parsing with UTF-8 encoding)
   - QRCode.js 1.0.0 (QR code generation)
   - jsPDF 2.5.1 (PDF generation for batch export)
+
+## User Interface
+
+**Professional dark theme** inspired by modern SaaS applications:
+- Dark color scheme with indigo accents
+- CSS custom properties for theming
+- Card-based layout with step progression
+- Responsive design with modern typography
+
+**Progressive workflow**:
+1. **Step 1**: Upload badge template (PNG/JPG) with drag & drop support
+2. **Step 2**: Upload CSV file with participant data with drag & drop support
+3. **Step 3**: Preview and generate badges (auto-loads first participant)
+
+**Key UX features**:
+- Header displays current step and participant count
+- Completed steps automatically hide their cards
+- Drag & drop file upload with visual feedback
+- Real-time status messages (success, warning, error)
+- Loading states with spinner animations
+- Disabled button states until data is ready
+- Auto-selection of first participant on CSV load
+
+**Smart CSV column detection**:
+- Automatically detects and maps CSV columns to badge fields
+- Supports multiple column name variations (French/English)
+- Fallback to full name splitting if separate first/last names not available
+- No manual configuration required
 
 ## Key Components
 
