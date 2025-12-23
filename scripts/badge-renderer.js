@@ -224,6 +224,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!qrImg) {
                 downloadBtn.disabled = false;
+                const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+                if (downloadPdfBtn) downloadPdfBtn.disabled = false;
                 return;
             }
 
@@ -244,6 +246,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             downloadBtn.disabled = false;
+            const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+            if (downloadPdfBtn) downloadPdfBtn.disabled = false;
         }, 300);
     };
 

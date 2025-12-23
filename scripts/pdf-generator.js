@@ -217,4 +217,69 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalPages = Math.ceil(participants.length / 2);
         showStatus('csvStatus', `✓ ${participants.length} badges générés sur ${totalPages} pages A4`, 'success');
     };
+
+    // Download current badge as PDF handler
+    document.getElementById('downloadPdfBtn').onclick = async () => {
+        const currentIndex = parseInt(participantSelect.value);
+
+        if (isNaN(currentIndex) || !templateImg.src || !participants[currentIndex]) {
+            return;
+        }
+
+        const btn = document.getElementById('downloadPdfBtn');
+        const originalContent = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading"></span> Génération...';
+
+        const { jsPDF } = window.jspdf;
+
+        // A4 portrait format
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'pt',
+            format: 'a4'
+        });
+
+        const pageWidth = 595;
+        const pageHeight = 842;
+
+        // Calculate badge size for upper half of page
+        const margin = 20;
+        const availableWidth = pageWidth - 2 * margin;
+        const availableHeight = (pageHeight - 3 * margin) / 2;
+
+        const badgeRatio = canvas.width / canvas.height;
+        let badgeWidth, badgeHeight;
+
+        if (availableWidth / availableHeight > badgeRatio) {
+            badgeHeight = availableHeight;
+            badgeWidth = badgeHeight * badgeRatio;
+        } else {
+            badgeWidth = availableWidth;
+            badgeHeight = badgeWidth / badgeRatio;
+        }
+
+        // Generate badge for current participant
+        await generateBadgeForParticipant(participants[currentIndex]);
+
+        const imgData = canvas.toDataURL('image/png');
+
+        // Center horizontally, position at top
+        const xPos = margin + (availableWidth - badgeWidth) / 2;
+        const yPos = margin;
+
+        pdf.addImage(imgData, 'PNG', xPos, yPos, badgeWidth, badgeHeight);
+
+        // Get participant name for filename
+        const prenom = smartGetField(participants[currentIndex], 'prenom');
+        const nom = smartGetField(participants[currentIndex], 'nom');
+        const name = `${prenom}_${nom}`.replace(/\s+/g, '_');
+
+        pdf.save(`Badge_${name}.pdf`);
+
+        btn.disabled = false;
+        btn.innerHTML = originalContent;
+
+        showStatus('csvStatus', `✓ Badge PDF généré pour ${prenom} ${nom}`, 'success');
+    };
 });
