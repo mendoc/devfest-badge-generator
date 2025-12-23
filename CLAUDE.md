@@ -8,14 +8,88 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-Single-page application architecture:
-- **index.html**: Self-contained HTML file with embedded CSS and JavaScript
-- **logo-qr.png**: Logo displayed at the center of QR codes
-- No build process or dependencies - runs directly in browser
-- External dependencies loaded via CDN:
-  - PapaParse 5.3.2 (CSV parsing with UTF-8 encoding)
-  - QRCode.js 1.0.0 (QR code generation)
-  - jsPDF 2.5.1 (PDF generation for batch export)
+**Modular single-page application** with separated concerns:
+
+### File Structure
+```
+devfest-badge-generator/
+├── index.html                 (147 lines - HTML structure only)
+├── styles/
+│   ├── main.css              (Core styles and CSS variables)
+│   ├── components.css        (Reusable UI components)
+│   └── editor.css            (CSV editor specific styles)
+├── scripts/
+│   ├── app.js                (Global state and utilities)
+│   ├── column-mapping.js     (CSV column detection)
+│   ├── csv-parser.js         (CSV import/export with PapaParse)
+│   ├── csv-editor.js         (Interactive data table editor)
+│   ├── badge-renderer.js     (Canvas badge generation)
+│   └── pdf-generator.js      (PDF batch export with jsPDF)
+├── logo-qr.png               (QR code logo overlay)
+└── CLAUDE.md                 (This file)
+```
+
+### Module Responsibilities
+
+**app.js** - Application state management
+- Global variables (participants, participantsOriginal, participantsEdited)
+- Template and logo images
+- Canvas and DOM element references
+- Step management (`updateStep()`)
+- Status messages (`showStatus()`)
+- Editor state (editorActive, columnMappingOverrides, duplicates)
+
+**column-mapping.js** - Intelligent column detection
+- Column mapping definitions (70+ variations for French/English)
+- `smartGetField()` function with fallback logic
+- `detectColumnMappings()` for auto-detection
+- `renderColumnMappingTable()` for visual confirmation
+- Full name splitting when first/last names unavailable
+
+**csv-parser.js** - CSV data handling
+- CSV import with PapaParse (UTF-8, BOM handling)
+- Deep cloning for participantsOriginal/participantsEdited
+- CSV export with UTF-8 BOM for Excel compatibility
+- Integration with editor initialization
+- Drag & drop support
+
+**csv-editor.js** - Data validation and editing (~400 lines)
+- `initializeEditor()` - Entry point and coordination
+- `detectDuplicates()` - Find duplicate emails and names (O(n) with Maps)
+- `renderDuplicateWarnings()` - Visual duplicate alerts
+- `renderEditorTable()` - Build editable data table
+- `createTableRow()` - Individual row with contenteditable cells
+- Cell editing with visual feedback (green for edited, orange for duplicates)
+- Search/filter functionality
+- Row add/delete operations
+- Three workflow actions: Skip (original), Apply (edited), Export CSV
+
+**badge-renderer.js** - Badge generation
+- Text formatting utilities (capitalize, removeAccents, splitTextToFit)
+- Canvas-based badge rendering
+- QR code generation with vCard data
+- Logo overlay with high-quality rendering
+- Individual badge download (PNG)
+
+**pdf-generator.js** - Batch export
+- `generateBadgeForParticipant()` async function
+- jsPDF configuration (A4 portrait)
+- 2 badges per page layout (vertically stacked)
+- Progress indicator during generation
+- Batch download as single PDF
+
+### External Dependencies (CDN)
+- PapaParse 5.3.2 (CSV parsing with UTF-8 encoding)
+- QRCode.js 1.0.0 (QR code generation)
+- jsPDF 2.5.1 (PDF generation for batch export)
+
+### Benefits of Modular Architecture
+- **Maintainability**: Each module has a single responsibility
+- **Readability**: index.html reduced from 1,035 to 147 lines (85% reduction)
+- **Debugging**: Easier to locate and fix issues in specific modules
+- **Collaboration**: Multiple developers can work on different modules
+- **Extensibility**: New features can be added without touching existing modules
+- **No build step**: Still runs directly in browser
 
 ## User Interface
 
@@ -26,9 +100,17 @@ Single-page application architecture:
 - Responsive design with modern typography
 
 **Progressive workflow**:
-1. **Step 1**: Upload badge template (PNG/JPG) with drag & drop support
-2. **Step 2**: Upload CSV file with participant data with drag & drop support
-3. **Step 3**: Preview and generate badges (auto-loads first participant)
+1. **Step 1/4**: Upload badge template (PNG/JPG) with drag & drop support
+2. **Step 2/4**: Upload CSV file with participant data with drag & drop support
+3. **Step 3/4**: Verify and edit CSV data (optional CSV editor)
+   - Auto-detected column mapping with visual confirmation
+   - Duplicate detection (emails and full names)
+   - Inline cell editing with visual feedback
+   - Search and filter participants
+   - Add/delete rows
+   - Export edited CSV for future use
+   - Skip or Apply changes before proceeding
+4. **Step 4/4**: Preview and generate badges (auto-loads first participant)
 
 **Key UX features**:
 - Header displays current step and participant count
@@ -141,18 +223,43 @@ Open `index.html` directly in a modern browser (Chrome, Firefox, Edge). No local
 **Workflow**:
 1. Load badge template image (PNG recommended)
 2. Load participant CSV file
-3. Select participant from dropdown
-4. Badge renders with dynamic text layout and QR code
-5. Download options:
+3. **CSV Editor** (optional but recommended):
+   - Review auto-detected column mappings
+   - Check for and resolve duplicates
+   - Edit participant data inline
+   - Add or remove participants
+   - Export edited CSV for future use
+   - Skip or Apply changes
+4. Select participant from dropdown (auto-loads first)
+5. Badge renders with dynamic text layout and QR code
+6. Download options:
    - Individual badge as PNG
    - All badges as PDF (2 badges per A4 portrait page, stacked vertically)
 
 ## Files in Project
 
-- `index.html` - Main application
+### HTML
+- `index.html` - Main application (147 lines - structure only)
+
+### Styles
+- `styles/main.css` - Core styles and CSS variables
+- `styles/components.css` - Reusable UI components
+- `styles/editor.css` - CSV editor specific styles
+
+### Scripts
+- `scripts/app.js` - Global state and utilities
+- `scripts/column-mapping.js` - CSV column detection
+- `scripts/csv-parser.js` - CSV import/export
+- `scripts/csv-editor.js` - Interactive data table editor
+- `scripts/badge-renderer.js` - Canvas badge generation
+- `scripts/pdf-generator.js` - PDF batch export
+
+### Assets
 - `logo-qr.png` - Logo for QR code center (183 KB)
-- `Liste des badges - Feuille 1.csv` - Participant data
+
+### Documentation
 - `CLAUDE.md` - This documentation file
+- `README.md` - Project overview (if present)
 
 ## Common Issues and Solutions
 
