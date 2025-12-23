@@ -153,6 +153,25 @@
     <div id="qr-hidden"></div>
 </div>
 
+<!-- Column Mapping Modal -->
+<div id="mappingModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="mappingModalTitle">Sélectionner une colonne</h3>
+            <button class="modal-close" id="mappingModalClose">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description" id="mappingModalDescription">Choisissez la colonne CSV correspondante :</p>
+            <div class="column-list" id="columnList"></div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="clearMappingBtn">Aucune colonne</button>
+            <button class="btn btn-secondary" id="cancelMappingBtn">Annuler</button>
+        </div>
+    </div>
+</div>
+
 <!-- Application Scripts -->
 <script src="scripts/app.js"></script>
 <script src="scripts/column-mapping.js"></script>
