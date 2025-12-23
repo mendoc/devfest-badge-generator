@@ -110,7 +110,7 @@
     <div class="card hidden" id="previewCard">
         <div class="card-header">
             <h2 class="card-title">Prévisualisation et génération</h2>
-            <p class="card-description">Sélectionnez un participant pour prévisualiser son badge</p>
+            <p class="card-description">Naviguez entre les participants avec les flèches ou sélectionnez-en un directement</p>
         </div>
 
         <div class="select-wrapper">
@@ -119,8 +119,22 @@
             </select>
         </div>
 
-        <div class="preview-area">
-            <canvas id="badgeCanvas"></canvas>
+        <!-- Badge counter -->
+        <div class="badge-counter-top" id="badgeCounter">1 / 1</div>
+
+        <!-- Badge preview with side navigation -->
+        <div class="badge-preview-container">
+            <button class="btn-nav btn-nav-left" id="prevBadgeBtn" disabled title="Participant précédent (←)">
+                <span>←</span>
+            </button>
+
+            <div class="preview-area">
+                <canvas id="badgeCanvas"></canvas>
+            </div>
+
+            <button class="btn-nav btn-nav-right" id="nextBadgeBtn" disabled title="Participant suivant (→)">
+                <span>→</span>
+            </button>
         </div>
 
         <div class="actions">

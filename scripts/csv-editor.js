@@ -432,9 +432,9 @@ function handleSkipEditor() {
     // Enable download all button
     document.getElementById('downloadAllBtn').disabled = false;
 
-    // Trigger first participant load
+    // Trigger first participant load and update navigation
     if (participants.length > 0) {
-        participantSelect.selectedIndex = 1;
+        participantSelect.value = 0;
         participantSelect.dispatchEvent(new Event('change'));
     }
 
@@ -453,9 +453,9 @@ function handleApplyChanges() {
     // Enable download all button
     document.getElementById('downloadAllBtn').disabled = false;
 
-    // Trigger first participant load
+    // Trigger first participant load and update navigation
     if (participants.length > 0) {
-        participantSelect.selectedIndex = 1;
+        participantSelect.value = 0;
         participantSelect.dispatchEvent(new Event('change'));
     }
 

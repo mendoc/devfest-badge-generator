@@ -126,3 +126,60 @@ canvas {
     margin-top: 1.5rem;
     flex-wrap: wrap;
 }
+
+/* Badge Navigation */
+.badge-counter-top {
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+}
+
+.badge-preview-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.btn-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+    height: 3rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.btn-nav:hover:not(:disabled) {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: white;
+    transform: scale(1.05);
+}
+
+.btn-nav:disabled {
+    opacity: 0.2;
+    cursor: not-allowed;
+}
+
+.btn-nav-left {
+    /* Styles spécifiques pour la flèche gauche si nécessaire */
+}
+
+.btn-nav-right {
+    /* Styles spécifiques pour la flèche droite si nécessaire */
+}

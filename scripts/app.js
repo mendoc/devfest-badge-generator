@@ -32,6 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load QR logo
     qrLogoImg.src = "logo-qr.png";
 
+    // Setup badge navigation
+    setupBadgeNavigation();
+
     // Initialize first step
     updateStep(1);
 });
@@ -88,4 +91,82 @@ function populateSelect() {
         option.textContent = displayName || `Participant ${index + 1}`;
         participantSelect.appendChild(option);
     });
+}
+
+// Update badge counter and navigation buttons
+function updateBadgeNavigation() {
+    const currentIndex = parseInt(participantSelect.value);
+    const total = participants.length;
+
+    // Update counter display
+    const counterEl = document.getElementById('badgeCounter');
+    if (counterEl && !isNaN(currentIndex)) {
+        counterEl.textContent = `${currentIndex + 1} / ${total}`;
+    }
+
+    // Update button states
+    const prevBtn = document.getElementById('prevBadgeBtn');
+    const nextBtn = document.getElementById('nextBadgeBtn');
+
+    if (prevBtn) {
+        prevBtn.disabled = isNaN(currentIndex) || currentIndex <= 0;
+    }
+
+    if (nextBtn) {
+        nextBtn.disabled = isNaN(currentIndex) || currentIndex >= total - 1;
+    }
+}
+
+// Navigate to previous badge
+function navigatePrevBadge() {
+    const currentIndex = parseInt(participantSelect.value);
+    if (!isNaN(currentIndex) && currentIndex > 0) {
+        participantSelect.value = currentIndex - 1;
+        participantSelect.dispatchEvent(new Event('change'));
+    }
+}
+
+// Navigate to next badge
+function navigateNextBadge() {
+    const currentIndex = parseInt(participantSelect.value);
+    const total = participants.length;
+    if (!isNaN(currentIndex) && currentIndex < total - 1) {
+        participantSelect.value = currentIndex + 1;
+        participantSelect.dispatchEvent(new Event('change'));
+    }
+}
+
+// Setup navigation event listeners
+function setupBadgeNavigation() {
+    // Previous button
+    const prevBtn = document.getElementById('prevBadgeBtn');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', navigatePrevBadge);
+    }
+
+    // Next button
+    const nextBtn = document.getElementById('nextBadgeBtn');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', navigateNextBadge);
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        // Only navigate if preview card is visible
+        const previewCard = document.getElementById('previewCard');
+        if (previewCard && !previewCard.classList.contains('hidden')) {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                navigatePrevBadge();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                navigateNextBadge();
+            }
+        }
+    });
+
+    // Update navigation when participant changes
+    if (participantSelect) {
+        participantSelect.addEventListener('change', updateBadgeNavigation);
+    }
 }
