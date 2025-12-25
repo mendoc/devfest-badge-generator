@@ -51,6 +51,140 @@ function drawMultilineText(text, x, startY, lineHeight, maxWidth, maxChars = nul
     return currentY;
 }
 
+// Get default text zones configuration
+function getDefaultTextZones() {
+    return [
+        {
+            id: "prenom",
+            label: "Prénom",
+            field: "prenom",
+            x: 0.05,
+            y: 0.44,
+            width: 0.45,
+            fontSize: 0.05,
+            fontFamily: "Roboto",
+            fontWeight: "bold",
+            color: "#000000",
+            textTransform: "capitalize",
+            maxCharsPerLine: 16,
+            lineHeight: 1.2
+        },
+        {
+            id: "nom",
+            label: "Nom",
+            field: "nom",
+            x: 0.05,
+            y: 0.56,
+            width: 0.45,
+            fontSize: 0.05,
+            fontFamily: "Roboto",
+            fontWeight: "bold",
+            color: "#000000",
+            textTransform: "uppercase",
+            maxCharsPerLine: 12,
+            lineHeight: 1.2
+        },
+        {
+            id: "role",
+            label: "Rôle",
+            field: "role",
+            x: 0.05,
+            y: 0.68,
+            width: 0.45,
+            fontSize: 0.03,
+            fontFamily: "Roboto",
+            fontWeight: "normal",
+            color: "#3c4043",
+            textTransform: "none",
+            maxCharsPerLine: null,
+            lineHeight: 1.3
+        },
+        {
+            id: "pole",
+            label: "Pôle/Organisation",
+            field: "pole",
+            x: 0.05,
+            y: 0.78,
+            width: 0.45,
+            fontSize: 0.03,
+            fontFamily: "Roboto",
+            fontWeight: "normal",
+            color: "#3c4043",
+            textTransform: "none",
+            maxCharsPerLine: null,
+            lineHeight: 1.3
+        }
+    ];
+}
+
+// Get default QR zone configuration
+function getDefaultQRConfig() {
+    return {
+        enabled: true,
+        x: 0.75,
+        y: 0.32,
+        size: 0.28,
+        logoSize: 0.30,
+        logoPath: "logo-qr.png",
+        correctLevel: "M"
+    };
+}
+
+// Render a text zone with configuration
+function renderTextZone(participant, zone) {
+    const value = smartGetField(participant, zone.field);
+
+    console.log('renderTextZone called:', {
+        field: zone.field,
+        value: value,
+        zone: zone,
+        participant: participant
+    });
+
+    if (!value) {
+        console.warn(`No value found for field: ${zone.field}`);
+        return;
+    }
+
+    // Apply text transformation
+    let text = value;
+    switch (zone.textTransform) {
+        case 'uppercase':
+            text = text.toUpperCase();
+            break;
+        case 'lowercase':
+            text = text.toLowerCase();
+            break;
+        case 'capitalize':
+            text = capitalize(text);
+            break;
+    }
+
+    // Calculate pixel values from decimals (0.05 = 5%)
+    const x = canvas.width * zone.x;
+    const y = canvas.height * zone.y;
+    const maxWidth = canvas.width * zone.width;
+    const fontSize = canvas.height * zone.fontSize;
+    const lineHeight = fontSize * zone.lineHeight;
+
+    console.log('Rendering text:', {
+        text: text,
+        x: x,
+        y: y,
+        fontSize: fontSize,
+        font: `${zone.fontWeight} ${fontSize}px ${zone.fontFamily}`,
+        color: zone.color
+    });
+
+    // Set font
+    ctx.font = `${zone.fontWeight} ${fontSize}px ${zone.fontFamily}`;
+    ctx.fillStyle = zone.color;
+    ctx.textAlign = "left";
+
+    // Draw text
+    drawMultilineText(text, x, y, lineHeight, maxWidth, zone.maxCharsPerLine);
+}
+
 // Template upload handler
 document.addEventListener('DOMContentLoaded', () => {
     const bgInput = document.getElementById('bgInput');
@@ -77,22 +211,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    bgInput.onchange = (e) => {
+    bgInput.onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
         showStatus('templateStatus', '⏳ Chargement du template...', 'warning');
 
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
             templateImg.src = event.target.result;
-            templateImg.onload = () => {
+            templateImg.onload = async () => {
                 canvas.width = templateImg.width;
                 canvas.height = templateImg.height;
                 ctx.drawImage(templateImg, 0, 0);
 
+                // Save to project if active
+                if (currentProject && projectMode) {
+                    try {
+                        const blob = await fileToBlob(file);
+                        currentProject.template = {
+                            imageBlob: blob,
+                            width: templateImg.width,
+                            height: templateImg.height
+                        };
+                        await saveProjectToDB(currentProject);
+                        showStatus('templateStatus', `✓ Template sauvegardé dans "${currentProject.name}"`, 'success');
+                    } catch (error) {
+                        console.error('Error saving template to project:', error);
+                    }
+                }
+
                 showStatus('templateStatus', `✓ Template chargé (${canvas.width}x${canvas.height}px)`, 'success');
-                updateStep(2);
+
+                // Show template editor
+                showTemplateEditor();
             };
         };
         reader.readAsDataURL(file);
@@ -111,54 +263,28 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(templateImg, 0, 0);
 
-        // --- LEFT SIDE: TEXT ---
-        ctx.fillStyle = "#000000";
-        ctx.textAlign = "left";
+        // Get text zones from project config or defaults
+        const textZones = currentProject?.textZones || getDefaultTextZones();
 
-        const maxTextWidth = canvas.width * 0.45;
-        const xPos = canvas.width * 0.05;
-        let currentY = canvas.height * 0.44;
+        // Render each text zone
+        textZones.forEach(zone => {
+            renderTextZone(p, zone);
+        });
 
-        // First name (Bold, Capitalized) - Max 16 chars per line
-        const prenom = capitalize(smartGetField(p, 'prenom'));
-        const prenomFontSize = canvas.height * 0.05;
-        ctx.font = "bold " + prenomFontSize + "px Roboto, sans-serif";
+        // --- QR CODE ---
+        const qrConfig = currentProject?.qrZone || getDefaultQRConfig();
 
-        const prenomLines = splitTextToFit(prenom, maxTextWidth, 16);
-        currentY = drawMultilineText(prenom, xPos, currentY, prenomFontSize * 1.2, maxTextWidth, 16);
+        if (qrConfig.enabled === false) {
+            downloadBtn.disabled = false;
+            const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+            if (downloadPdfBtn) downloadPdfBtn.disabled = false;
+            return;
+        }
 
-        // Last name (Bold, UPPERCASE) - Max 12 chars per line
-        const nom = smartGetField(p, 'nom').toUpperCase();
-        const nomFontSize = canvas.height * 0.05;
-        ctx.font = "bold " + nomFontSize + "px Roboto, sans-serif";
-
-        const nomLines = splitTextToFit(nom, maxTextWidth, 12);
-        currentY = drawMultilineText(nom, xPos, currentY, nomFontSize * 1.2, maxTextWidth, 12);
-
-        const totalLines = prenomLines.length + nomLines.length;
-
-        // Fixed position for role and pole
-        const fixedRoleY = canvas.height * 0.44 + (3 * prenomFontSize * 1.2) + canvas.height * 0.02;
-
-        const detailsFontSize = canvas.height * 0.03;
-        ctx.font = detailsFontSize + "px Roboto, sans-serif";
-
-        // Change role color to white if 4+ lines
-        ctx.fillStyle = totalLines >= 4 ? "#ffffff" : "#3c4043";
-
-        const role = smartGetField(p, 'role');
-        let roleY = drawMultilineText(role, xPos, fixedRoleY, detailsFontSize * 1.3, maxTextWidth);
-
-        // Pole keeps normal color
-        ctx.fillStyle = "#3c4043";
-        const pole = smartGetField(p, 'pole');
-        drawMultilineText(pole, xPos, roleY, detailsFontSize * 1.3, maxTextWidth);
-
-        // --- RIGHT SIDE: QR CODE ---
         const qrContainer = document.getElementById('qr-hidden');
         qrContainer.innerHTML = "";
 
-        const qrSize = canvas.width * 0.28;
+        const qrSize = canvas.width * qrConfig.size;
 
         // Create vCard manually
         const nomComplet = removeAccents(smartGetField(p, 'nom').toUpperCase());
@@ -229,13 +355,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const centerOfRightSide = (canvas.width * 0.75);
-            const xPos = centerOfRightSide - (qrSize / 2);
-            const yPos = canvas.height * 0.32;
+            const xPos = (canvas.width * qrConfig.x) - (qrSize / 2);
+            const yPos = canvas.height * qrConfig.y;
 
             ctx.drawImage(qrImg, xPos, yPos, qrSize, qrSize);
 
-            const logoSize = qrSize * 0.30;
+            const logoSize = qrSize * qrConfig.logoSize;
             const logoX = xPos + (qrSize / 2) - (logoSize / 2);
             const logoY = yPos + (qrSize / 2) - (logoSize / 2);
 

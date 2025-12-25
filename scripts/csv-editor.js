@@ -443,9 +443,20 @@ function handleSkipEditor() {
 }
 
 // Handle apply changes (use edited data)
-function handleApplyChanges() {
+async function handleApplyChanges() {
     participants = participantsEdited;
     populateSelect();
+
+    // Save to project if active
+    if (currentProject && projectMode) {
+        currentProject.csvData = participantsEdited;
+        currentProject.columnMappings = columnMappingOverrides;
+        await saveProjectToDB(currentProject);
+        console.log('CSV data saved to project');
+    }
+
+    // Hide editor card
+    document.getElementById('editorCard').classList.add('hidden');
 
     // Show preview card
     document.getElementById('previewCard').classList.remove('hidden');
@@ -453,8 +464,13 @@ function handleApplyChanges() {
     // Enable download all button
     document.getElementById('downloadAllBtn').disabled = false;
 
-    // Trigger first participant load and update navigation
-    if (participants.length > 0) {
+    // Trigger current or first participant load
+    const currentIndex = parseInt(participantSelect.value);
+    if (!isNaN(currentIndex) && participants[currentIndex]) {
+        // Re-render current badge with updated data
+        participantSelect.dispatchEvent(new Event('change'));
+    } else if (participants.length > 0) {
+        // First time - load first participant
         participantSelect.value = 0;
         participantSelect.dispatchEvent(new Event('change'));
     }

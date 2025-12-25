@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/components.css">
     <link rel="stylesheet" href="styles/editor.css">
+    <link rel="stylesheet" href="styles/template-editor.css">
 
     <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
@@ -23,6 +24,212 @@
     <h1>Baba</h1>
     <div id="progressIndicator" class="header-progress"></div>
 </header>
+
+<!-- Project Selection Modal -->
+<div id="projectModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content project-modal">
+        <div class="modal-header">
+            <h3 class="modal-title">Mes projets Baba</h3>
+            <button class="modal-close" id="projectModalClose">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description">Sélectionnez un projet existant ou créez-en un nouveau</p>
+
+            <!-- Create new project -->
+            <div class="project-create">
+                <input type="text" id="newProjectName" class="config-input" placeholder="Nom du nouveau projet...">
+                <button class="btn btn-primary" id="createProjectBtn">
+                    <span>➕</span> Créer
+                </button>
+            </div>
+
+            <!-- Project list -->
+            <div id="projectList" class="project-list"></div>
+
+            <!-- Continue without project -->
+            <div class="project-continue">
+                <button class="btn btn-secondary" id="continueWithoutProjectBtn">
+                    Continuer sans projet (session uniquement)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template Editor Modal -->
+<div id="templateEditorModal" class="modal template-editor-modal hidden">
+    <div class="template-editor-header">
+        <h2 class="template-editor-title">Éditeur de Template</h2>
+        <button class="modal-close" id="closeTemplateEditorBtn">&times;</button>
+    </div>
+
+    <div class="template-editor-container">
+        <!-- Canvas area -->
+        <div class="template-canvas-area">
+            <div class="template-canvas-wrapper">
+                <canvas id="templateEditorCanvas"></canvas>
+                <div id="textZonesOverlay" class="text-zones-overlay"></div>
+            </div>
+        </div>
+
+        <!-- Configuration panel -->
+        <div class="template-config-panel">
+            <!-- Zone config -->
+            <div id="zoneConfigSection" class="config-section hidden">
+                <div class="config-section-title" id="zoneConfigTitle">Zone sélectionnée</div>
+
+                <div class="config-field">
+                    <label class="config-label">Nom de la zone</label>
+                    <input type="text" id="zoneLabel" class="config-input" placeholder="Ex: Prénom">
+                </div>
+
+                <div class="config-field">
+                    <label class="config-label">Champ CSV</label>
+                    <select id="zoneFieldSelect" class="config-select">
+                        <option value="prenom">Prénom</option>
+                        <option value="nom">Nom</option>
+                        <option value="email">Email</option>
+                        <option value="tel">Téléphone</option>
+                        <option value="role">Rôle</option>
+                        <option value="pole">Pôle/Organisation</option>
+                    </select>
+                </div>
+
+                <div class="config-row">
+                    <div class="config-field">
+                        <label class="config-label">Position X (%)</label>
+                        <input type="number" id="zonePosX" class="config-input" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="config-field">
+                        <label class="config-label">Position Y (%)</label>
+                        <input type="number" id="zonePosY" class="config-input" min="0" max="100" step="0.1">
+                    </div>
+                </div>
+
+                <div class="config-row">
+                    <div class="config-field">
+                        <label class="config-label">Largeur (%)</label>
+                        <input type="number" id="zoneWidth" class="config-input" min="1" max="100" step="0.1">
+                    </div>
+                    <div class="config-field">
+                        <label class="config-label">Hauteur (%)</label>
+                        <input type="number" id="zoneHeight" class="config-input" min="1" max="100" step="0.1">
+                    </div>
+                </div>
+
+                <div class="config-field">
+                    <label class="config-label">Taille de police (%)</label>
+                    <input type="number" id="zoneFontSize" class="config-input" min="1" max="20" step="0.1">
+                </div>
+
+                <div class="config-row">
+                    <div class="config-field">
+                        <label class="config-label">Police</label>
+                        <select id="zoneFontFamily" class="config-select">
+                            <option value="Roboto">Roboto</option>
+                            <option value="Arial">Arial</option>
+                            <option value="sans-serif">Sans-serif</option>
+                        </select>
+                    </div>
+                    <div class="config-field">
+                        <label class="config-label">Graisse</label>
+                        <select id="zoneFontWeight" class="config-select">
+                            <option value="normal">Normal</option>
+                            <option value="bold">Gras</option>
+                            <option value="900">Très gras</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="config-field">
+                    <label class="config-label">Couleur</label>
+                    <div class="color-picker-wrapper">
+                        <div class="color-preview" id="zoneColorPreview"></div>
+                        <input type="text" id="zoneColorText" class="config-input" placeholder="#000000">
+                        <input type="color" id="zoneColorPicker">
+                    </div>
+                </div>
+
+                <div class="config-field">
+                    <label class="config-label">Transformation</label>
+                    <select id="zoneTextTransform" class="config-select">
+                        <option value="none">Aucune</option>
+                        <option value="uppercase">MAJUSCULES</option>
+                        <option value="lowercase">minuscules</option>
+                        <option value="capitalize">Capitaliser</option>
+                    </select>
+                </div>
+
+                <div class="config-field">
+                    <label class="config-label">Caractères max par ligne</label>
+                    <input type="number" id="zoneMaxChars" class="config-input" min="1" placeholder="Illimité">
+                </div>
+
+                <div class="config-field">
+                    <label class="config-label">Hauteur de ligne</label>
+                    <input type="number" id="zoneLineHeight" class="config-input" min="1" max="3" step="0.1" value="1.2">
+                </div>
+
+                <div class="config-actions">
+                    <button class="btn btn-secondary btn-sm" id="deleteZoneBtn">
+                        <span>🗑️</span> Supprimer
+                    </button>
+                    <button class="btn btn-primary btn-sm" id="applyZoneConfigBtn">
+                        <span>✓</span> Appliquer
+                    </button>
+                </div>
+            </div>
+
+            <!-- QR config -->
+            <div id="qrConfigSection" class="config-section">
+                <div class="config-section-title">QR Code</div>
+
+                <div class="config-checkbox">
+                    <input type="checkbox" id="qrEnabled" checked>
+                    <label for="qrEnabled">Activer le QR Code</label>
+                </div>
+
+                <div class="config-row">
+                    <div class="config-field">
+                        <label class="config-label">Position X (%)</label>
+                        <input type="number" id="qrPosX" class="config-input" value="75" min="0" max="100" step="0.1">
+                    </div>
+                    <div class="config-field">
+                        <label class="config-label">Position Y (%)</label>
+                        <input type="number" id="qrPosY" class="config-input" value="32" min="0" max="100" step="0.1">
+                    </div>
+                </div>
+
+                <div class="config-field">
+                    <label class="config-label">Taille (%)</label>
+                    <input type="number" id="qrSize" class="config-input" value="28" min="5" max="50" step="0.1">
+                </div>
+            </div>
+
+            <!-- Preset actions -->
+            <div class="config-section">
+                <button class="btn btn-secondary btn-block" id="loadDefaultConfigBtn">
+                    <span>⚙️</span> Charger config par défaut
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Editor toolbar -->
+    <div class="template-editor-toolbar">
+        <div class="toolbar-left">
+            <button class="btn btn-secondary" id="addTextZoneBtn">
+                <span>➕</span> Ajouter zone de texte
+            </button>
+        </div>
+        <div class="toolbar-right">
+            <button class="btn btn-primary" id="saveTemplateConfigBtn">
+                <span>💾</span> Sauvegarder et continuer
+            </button>
+        </div>
+    </div>
+</div>
 
 <div class="container">
     <!-- Step 1: Template Upload -->
@@ -137,6 +344,16 @@
             </button>
         </div>
 
+        <!-- Edit buttons -->
+        <div class="actions" style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <button class="btn btn-secondary" id="editTemplateBtn">
+                <span>✏️</span> Éditer les zones de texte
+            </button>
+            <button class="btn btn-secondary" id="editCsvBtn">
+                <span>📝</span> Éditer les données CSV
+            </button>
+        </div>
+
         <div class="actions">
             <button class="btn btn-secondary" id="downloadBtn" disabled>
                 <span>⬇</span> Télécharger ce badge (PNG)
@@ -174,6 +391,8 @@
 
 <!-- Application Scripts -->
 <script src="scripts/app.js"></script>
+<script src="scripts/project-manager.js"></script>
+<script src="scripts/template-editor.js"></script>
 <script src="scripts/column-mapping.js"></script>
 <script src="scripts/csv-editor.js"></script>
 <script src="scripts/csv-parser.js"></script>

@@ -18,6 +18,11 @@
     --radius-lg: 12px;
 }
 
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
 /* Global Styles */
 * {
     margin: 0;

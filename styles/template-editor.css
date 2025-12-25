@@ -1,0 +1,574 @@
+/* Template Editor Styles */
+/* Full-screen modal editor for configuring badge text zones */
+
+/* ===========================
+   Project Selection Modal
+   =========================== */
+
+.project-modal {
+    max-width: 700px;
+}
+
+.project-create {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-md);
+}
+
+.project-create input {
+    flex: 1;
+}
+
+.project-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.project-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    transition: all 0.2s;
+}
+
+.project-item:hover {
+    background: var(--bg-primary);
+    border-color: var(--accent-primary);
+}
+
+.project-info {
+    flex: 1;
+}
+
+.project-name {
+    font-size: 0.938rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.project-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.project-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 1.125rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-icon:hover {
+    background: var(--accent-light);
+    border-color: var(--accent-primary);
+    transform: scale(1.05);
+}
+
+.btn-icon.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: var(--error);
+}
+
+.project-continue {
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.no-projects {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+}
+
+.error-message {
+    text-align: center;
+    padding: 2rem;
+    color: var(--error);
+    font-size: 0.875rem;
+}
+
+/* ===========================
+   Template Editor Modal
+   =========================== */
+
+.template-editor-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2000;
+    background: var(--bg-primary);
+    display: flex;
+    flex-direction: column;
+}
+
+.template-editor-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.template-editor-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.template-editor-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* ===========================
+   Canvas Area
+   =========================== */
+
+.template-canvas-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: auto;
+    background: linear-gradient(45deg, #1a1a1a 25%, transparent 25%),
+                linear-gradient(-45deg, #1a1a1a 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #1a1a1a 75%),
+                linear-gradient(-45deg, transparent 75%, #1a1a1a 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+.template-canvas-wrapper {
+    position: relative;
+    display: inline-block;
+    margin: 2rem;
+}
+
+#templateEditorCanvas {
+    border: 1px solid var(--border-color);
+    display: block;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.text-zones-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* ===========================
+   Text Zones
+   =========================== */
+
+.text-zone {
+    position: absolute;
+    border: 2px dashed var(--accent-primary);
+    background: rgba(99, 102, 241, 0.1);
+    cursor: move;
+    pointer-events: all;
+    transition: all 0.1s;
+}
+
+.text-zone:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: var(--accent-hover);
+}
+
+.text-zone.selected {
+    border-color: var(--success);
+    border-style: solid;
+    background: rgba(16, 185, 129, 0.15);
+    box-shadow: 0 0 0 2px var(--success);
+    z-index: 10;
+}
+
+.text-zone-label {
+    position: absolute;
+    top: -24px;
+    left: 0;
+    background: var(--accent-primary);
+    color: white;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px 4px 0 0;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.text-zone.selected .text-zone-label {
+    background: var(--success);
+}
+
+/* ===========================
+   Resize Handles
+   =========================== */
+
+.resize-handle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: white;
+    border: 2px solid var(--accent-primary);
+    border-radius: 50%;
+    pointer-events: all;
+    transition: all 0.2s;
+}
+
+.resize-handle:hover {
+    background: var(--accent-primary);
+    transform: scale(1.3);
+}
+
+.text-zone.selected .resize-handle {
+    border-color: var(--success);
+}
+
+.text-zone.selected .resize-handle:hover {
+    background: var(--success);
+}
+
+.resize-handle.nw {
+    top: -5px;
+    left: -5px;
+    cursor: nw-resize;
+}
+
+.resize-handle.ne {
+    top: -5px;
+    right: -5px;
+    cursor: ne-resize;
+}
+
+.resize-handle.sw {
+    bottom: -5px;
+    left: -5px;
+    cursor: sw-resize;
+}
+
+.resize-handle.se {
+    bottom: -5px;
+    right: -5px;
+    cursor: se-resize;
+}
+
+.resize-handle.n {
+    top: -5px;
+    left: 50%;
+    margin-left: -5px;
+    cursor: n-resize;
+}
+
+.resize-handle.s {
+    bottom: -5px;
+    left: 50%;
+    margin-left: -5px;
+    cursor: s-resize;
+}
+
+.resize-handle.e {
+    top: 50%;
+    right: -5px;
+    margin-top: -5px;
+    cursor: e-resize;
+}
+
+.resize-handle.w {
+    top: 50%;
+    left: -5px;
+    margin-top: -5px;
+    cursor: w-resize;
+}
+
+/* ===========================
+   QR Zone
+   =========================== */
+
+.qr-zone {
+    position: absolute;
+    border: 2px dashed var(--warning);
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: 4px;
+    cursor: move;
+    pointer-events: all;
+    transition: all 0.1s;
+}
+
+.qr-zone:hover {
+    background: rgba(245, 158, 11, 0.15);
+    border-color: var(--warning);
+}
+
+.qr-zone.selected {
+    border-style: solid;
+    background: rgba(245, 158, 11, 0.2);
+    box-shadow: 0 0 0 2px var(--warning);
+}
+
+.qr-zone-label {
+    position: absolute;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--warning);
+    color: var(--bg-primary);
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 4px 4px 0 0;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* ===========================
+   Configuration Panel
+   =========================== */
+
+.template-config-panel {
+    width: 350px;
+    background: var(--bg-secondary);
+    border-left: 1px solid var(--border-color);
+    padding: 1.5rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.config-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.config-section-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.config-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.config-input,
+.config-select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.config-input:focus,
+.config-select:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    background: var(--bg-primary);
+}
+
+.config-input[type="number"] {
+    appearance: textfield;
+}
+
+.config-input[type="number"]::-webkit-inner-spin-button,
+.config-input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.config-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.config-row .config-field {
+    flex: 1;
+}
+
+.config-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+}
+
+.config-checkbox input[type="checkbox"] {
+    width: 1.125rem;
+    height: 1.125rem;
+    cursor: pointer;
+}
+
+.config-checkbox label {
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+/* ===========================
+   Color Picker
+   =========================== */
+
+.color-picker-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.color-preview {
+    width: 2.5rem;
+    height: 2rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.color-preview:hover {
+    border-color: var(--accent-primary);
+}
+
+.color-picker-wrapper .config-input {
+    flex: 1;
+}
+
+input[type="color"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+/* ===========================
+   Configuration Actions
+   =========================== */
+
+.config-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.btn-sm {
+    font-size: 0.813rem;
+    padding: 0.5rem 1rem;
+}
+
+.btn-block {
+    width: 100%;
+}
+
+/* ===========================
+   Editor Toolbar
+   =========================== */
+
+.template-editor-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
+}
+
+.toolbar-left,
+.toolbar-right {
+    display: flex;
+    gap: 0.75rem;
+}
+
+/* ===========================
+   Empty State
+   =========================== */
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state-text {
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+
+/* ===========================
+   Responsive
+   =========================== */
+
+@media (max-width: 1024px) {
+    .template-config-panel {
+        width: 300px;
+    }
+}
+
+@media (max-width: 768px) {
+    .template-editor-container {
+        flex-direction: column;
+    }
+
+    .template-config-panel {
+        width: 100%;
+        max-height: 300px;
+        border-left: none;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .template-canvas-area {
+        min-height: 400px;
+    }
+}
