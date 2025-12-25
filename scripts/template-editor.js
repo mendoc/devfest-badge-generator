@@ -8,6 +8,52 @@ let editorCanvas = null;
 let editorCtx = null;
 let zonesOverlay = null;
 
+// === Text Rendering Helpers (copied from badge-renderer.js) ===
+
+function capitalize(str) {
+    if (!str) return "";
+    return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
+}
+
+function splitTextToFit(text, maxWidth, maxChars = null) {
+    const cleanText = text.trim().replace(/\s+/g, ' ');
+    const words = cleanText.split(' ').filter(word => word.length > 0);
+
+    if (words.length === 0) return [];
+
+    const lines = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+        const testLine = currentLine + ' ' + words[i];
+        const metrics = editorCtx.measureText(testLine);
+
+        const exceedsWidth = metrics.width > maxWidth;
+        const exceedsChars = maxChars && testLine.length > maxChars;
+
+        if (exceedsWidth || exceedsChars) {
+            lines.push(currentLine);
+            currentLine = words[i];
+        } else {
+            currentLine = testLine;
+        }
+    }
+    lines.push(currentLine);
+    return lines;
+}
+
+function drawMultilineTextOnEditor(text, x, startY, lineHeight, maxWidth, maxChars = null) {
+    const lines = splitTextToFit(text, maxWidth, maxChars);
+    let currentY = startY;
+
+    lines.forEach((line) => {
+        editorCtx.fillText(line, x, currentY);
+        currentY += lineHeight;
+    });
+
+    return currentY;
+}
+
 // Drag state
 let isDragging = false;
 let isResizing = false;
@@ -116,7 +162,8 @@ function loadDefaultConfiguration() {
             color: "#000000",
             textTransform: "capitalize",
             maxCharsPerLine: 16,
-            lineHeight: 1.2
+            lineHeight: 1.2,
+            sampleText: "Jean"
         },
         {
             id: "nom",
@@ -132,7 +179,8 @@ function loadDefaultConfiguration() {
             color: "#000000",
             textTransform: "uppercase",
             maxCharsPerLine: 12,
-            lineHeight: 1.2
+            lineHeight: 1.2,
+            sampleText: "Dupont"
         },
         {
             id: "role",
@@ -148,7 +196,8 @@ function loadDefaultConfiguration() {
             color: "#3c4043",
             textTransform: "none",
             maxCharsPerLine: null,
-            lineHeight: 1.3
+            lineHeight: 1.3,
+            sampleText: "Développeur"
         },
         {
             id: "pole",
@@ -164,7 +213,8 @@ function loadDefaultConfiguration() {
             color: "#3c4043",
             textTransform: "none",
             maxCharsPerLine: null,
-            lineHeight: 1.3
+            lineHeight: 1.3,
+            sampleText: "GDG Libreville"
         }
     ];
 
@@ -200,7 +250,8 @@ function createTextZone() {
         color: "#000000",
         textTransform: "none",
         maxCharsPerLine: null,
-        lineHeight: 1.2
+        lineHeight: 1.2,
+        sampleText: "Exemple"
     };
 
     textZones.push(newZone);
@@ -236,17 +287,78 @@ function getZoneById(zoneId) {
 function renderAllZones() {
     if (!zonesOverlay) return;
 
+    // Step 1: Redraw canvas with template image
+    redrawCanvas();
+
+    // Step 2: Draw sample text for all zones on canvas
+    textZones.forEach(zone => {
+        drawZoneSampleText(zone);
+    });
+
+    // Step 3: Create HTML overlay elements for interaction
     zonesOverlay.innerHTML = '';
 
-    // Render text zones
+    // Render text zones overlays
     textZones.forEach(zone => {
         renderZoneOverlay(zone);
     });
 
-    // Render QR zone
+    // Render QR zone overlay
     if (qrZone && qrZone.enabled) {
         renderQRZone();
     }
+}
+
+function redrawCanvas() {
+    if (!editorCanvas || !editorCtx || !templateImg) return;
+
+    // Clear canvas
+    editorCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+
+    // Redraw template image
+    if (templateImg.complete && templateImg.naturalHeight !== 0) {
+        editorCtx.drawImage(templateImg, 0, 0);
+    }
+}
+
+function drawZoneSampleText(zone) {
+    if (!editorCanvas || !editorCtx) return;
+
+    const canvasWidth = editorCanvas.width;
+    const canvasHeight = editorCanvas.height;
+
+    // Get sample text from zone configuration or default
+    let exampleText = zone.sampleText || zone.label;
+
+    // Apply text transformation
+    let transformedText = exampleText;
+    switch(zone.textTransform) {
+        case 'uppercase':
+            transformedText = exampleText.toUpperCase();
+            break;
+        case 'lowercase':
+            transformedText = exampleText.toLowerCase();
+            break;
+        case 'capitalize':
+            transformedText = capitalize(exampleText);
+            break;
+    }
+
+    // Calculate pixel positions from percentages (same as badge-renderer.js)
+    const x = canvasWidth * (zone.x / 100);
+    const y = canvasHeight * (zone.y / 100);
+    const maxWidth = canvasWidth * (zone.width / 100);
+    const fontSize = canvasHeight * (zone.fontSize / 100);
+    const lineHeight = fontSize * zone.lineHeight;
+
+    // Set font properties (same as badge-renderer.js)
+    editorCtx.font = `${zone.fontWeight} ${fontSize}px ${zone.fontFamily}`;
+    editorCtx.fillStyle = zone.color;
+    editorCtx.textAlign = "left";
+    editorCtx.textBaseline = "top"; // Make Y position the TOP of the text
+
+    // Draw multiline text with same logic as badge-renderer.js
+    drawMultilineTextOnEditor(transformedText, x, y, lineHeight, maxWidth, zone.maxCharsPerLine);
 }
 
 function renderZoneOverlay(zone) {
@@ -346,6 +458,7 @@ function showZoneConfigPanel(zone) {
     const fieldMap = {
         'zoneLabel': zone.label,
         'zoneFieldSelect': zone.field,
+        'zoneSampleText': zone.sampleText || '',
         'zonePosX': zone.x,
         'zonePosY': zone.y,
         'zoneWidth': zone.width,
@@ -389,6 +502,7 @@ function applyZoneConfig() {
     // Get values from form
     zone.label = document.getElementById('zoneLabel')?.value || zone.label;
     zone.field = document.getElementById('zoneFieldSelect')?.value || zone.field;
+    zone.sampleText = document.getElementById('zoneSampleText')?.value || zone.label;
     zone.x = parseFloat(document.getElementById('zonePosX')?.value || zone.x);
     zone.y = parseFloat(document.getElementById('zonePosY')?.value || zone.y);
     zone.width = parseFloat(document.getElementById('zoneWidth')?.value || zone.width);
@@ -721,6 +835,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const zone = getZoneById(selectedZone);
                 if (zone) {
                     zone.label = e.target.value;
+                    renderAllZones();
+                }
+            }
+        });
+    }
+
+    // Zone sample text input
+    const zoneSampleTextInput = document.getElementById('zoneSampleText');
+    if (zoneSampleTextInput) {
+        zoneSampleTextInput.addEventListener('input', (e) => {
+            if (selectedZone && selectedZone !== 'qr') {
+                const zone = getZoneById(selectedZone);
+                if (zone) {
+                    zone.sampleText = e.target.value;
                     renderAllZones();
                 }
             }

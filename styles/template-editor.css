@@ -197,21 +197,21 @@
 .text-zone {
     position: absolute;
     border: 2px dashed var(--accent-primary);
-    background: rgba(99, 102, 241, 0.1);
+    background: rgba(99, 102, 241, 0.05);
     cursor: move;
     pointer-events: all;
     transition: all 0.1s;
 }
 
 .text-zone:hover {
-    background: rgba(99, 102, 241, 0.15);
+    background: rgba(99, 102, 241, 0.08);
     border-color: var(--accent-hover);
 }
 
 .text-zone.selected {
     border-color: var(--success);
     border-style: solid;
-    background: rgba(16, 185, 129, 0.15);
+    background: rgba(16, 185, 129, 0.08);
     box-shadow: 0 0 0 2px var(--success);
     z-index: 10;
 }
@@ -232,6 +232,17 @@
 
 .text-zone.selected .text-zone-label {
     background: var(--success);
+}
+
+.text-zone-sample {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    white-space: nowrap;
+    pointer-events: none;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+    user-select: none;
 }
 
 /* ===========================

@@ -74,13 +74,19 @@ devfest-badge-generator/
   - `renderProjectList()` - Display projects with actions (load, export, delete)
   - Event handlers for project selection, creation, deletion, export
 
-**template-editor.js** - Visual template configuration (~650 lines)
+**template-editor.js** - Visual template configuration (~900 lines)
 - Template editor initialization and modal management
 - Text zone management:
   - `createTextZone(x, y, width, height)` - Create new text zone
   - `deleteTextZone(zoneId)` - Remove text zone
   - `selectTextZone(zoneId)` - Select zone for editing
   - `getAllTextZones()` - Get all configured zones
+- **Canvas-based sample text rendering**:
+  - `redrawCanvas()` - Clear and redraw template image on canvas
+  - `drawZoneSampleText(zone)` - Draw sample text with **identical rendering** to badge preview
+  - Uses same functions as badge-renderer.js: `capitalize()`, `splitTextToFit()`, `drawMultilineTextOnEditor()`
+  - `textBaseline = "top"` for consistent positioning (Y = top of text)
+  - Real-time preview of text transformations and styling
 - Drag & drop implementation:
   - `handleMouseDown(e)` - Start drag or resize operation
   - `handleMouseMove(e)` - Update position/size during drag
@@ -88,22 +94,25 @@ devfest-badge-generator/
   - `handleDrag(zoneId, deltaX, deltaY)` - Move zone
   - `handleResize(zoneId, deltaX, deltaY)` - Resize zone with 8 handles (nw, ne, sw, se, n, s, e, w)
 - Zone rendering:
-  - `renderTextZones()` - Draw all zones on overlay
-  - `renderSelectedZone()` - Highlight selected zone
-  - `renderZoneHandles()` - Draw resize handles
+  - `renderAllZones()` - Three-step process: (1) redraw canvas, (2) draw sample text, (3) create overlay elements
+  - `renderZoneOverlay(zone)` - Create draggable/resizable HTML overlay rectangles
+  - Transparent overlays (5% opacity) to not obscure canvas-rendered text
 - Configuration UI:
   - `showZoneConfigPanel(zone)` - Display zone properties form
   - `updateZoneConfig(zoneId, config)` - Update zone configuration
   - `applyConfigToZone(zoneId)` - Apply form changes to zone
+  - Real-time updates for label, sample text, and color changes
 - QR code configuration:
   - `showQRConfigPanel()` - Display QR config form
   - `updateQRConfig(config)` - Update QR settings
+  - Conditional sidebar display (only show relevant properties)
 - Preset configurations:
   - `loadDefaultConfiguration()` - Load hardcoded default config
   - `applyConfiguration(config)` - Apply saved config to editor
 - Save/Load:
   - `saveConfigurationToProject()` - Save zones to currentProject and IndexedDB
   - `loadConfigurationFromProject()` - Load zones from currentProject
+  - Detects if editing from preview and re-renders badge
 
 **column-mapping.js** - Intelligent column detection
 - Column mapping definitions (70+ variations for French/English)
@@ -201,6 +210,7 @@ Each project is stored as an object with the following schema:
       id: "prenom",               // Unique zone identifier
       label: "Prénom",            // Display label
       field: "prenom",            // CSV field to map to
+      sampleText: "Jean",         // Custom sample text for editor preview
       x: 0.05,                    // Position X (5% of canvas width)
       y: 0.44,                    // Position Y (44% of canvas height)
       width: 0.45,                // Max width (45% of canvas width)
@@ -477,6 +487,7 @@ Each text zone has configurable properties:
 |----------|------|-------------|---------|
 | **label** | string | Display name | "Prénom" |
 | **field** | string | CSV column to map | "prenom" |
+| **sampleText** | string | Custom sample text for preview | "Jean" |
 | **x** | percentage | Horizontal position | 5% (left edge) |
 | **y** | percentage | Vertical position | 44% (from top) |
 | **width** | percentage | Maximum text width | 45% (of canvas) |
@@ -488,6 +499,23 @@ Each text zone has configurable properties:
 | **textTransform** | string | Text case | "none", "uppercase", "lowercase", "capitalize" |
 | **maxCharsPerLine** | number/null | Max characters before wrap | 16 (null = unlimited) |
 | **lineHeight** | number | Line spacing multiplier | 1.2 |
+
+### Identical Rendering Between Editor and Preview
+
+The template editor now uses **canvas-based text rendering** with the same functions as badge-renderer.js:
+
+- **Same rendering logic**: `drawZoneSampleText()` uses `capitalize()`, `splitTextToFit()`, and `drawMultilineTextOnEditor()` - identical to badge generation
+- **Text positioning**: Both use `textBaseline = "top"` so Y position = top of text (consistent across editor and preview)
+- **Text transformations**: Applied identically (uppercase, lowercase, capitalize)
+- **Word wrapping**: Same `maxCharsPerLine` and width-based wrapping behavior
+- **Font rendering**: Same font family, weight, size, and color
+- **Custom sample text**: `sampleText` property allows realistic preview with personalized examples
+
+**How it works**:
+1. `renderAllZones()` redraws template image on canvas
+2. Sample text drawn directly on canvas for each zone
+3. Transparent HTML overlays created for drag/drop interaction (don't obscure text)
+4. Changes to properties instantly update canvas rendering
 
 ### Default Configuration
 

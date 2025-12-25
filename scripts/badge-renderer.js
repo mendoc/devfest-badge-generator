@@ -180,6 +180,7 @@ function renderTextZone(participant, zone) {
     ctx.font = `${zone.fontWeight} ${fontSize}px ${zone.fontFamily}`;
     ctx.fillStyle = zone.color;
     ctx.textAlign = "left";
+    ctx.textBaseline = "top"; // Make Y position the TOP of the text
 
     // Draw text
     drawMultilineText(text, x, y, lineHeight, maxWidth, zone.maxCharsPerLine);
