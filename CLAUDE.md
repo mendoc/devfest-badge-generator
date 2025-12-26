@@ -517,6 +517,18 @@ The template editor now uses **canvas-based text rendering** with the same funct
 3. Transparent HTML overlays created for drag/drop interaction (don't obscure text)
 4. Changes to properties instantly update canvas rendering
 
+### Clean Visual Interface
+
+The editor provides a **distraction-free preview** by hiding zone indicators by default:
+
+- **Default state**: Zones completely invisible (no borders, no labels) for clean badge preview
+- **Hover state**: Light dashed border appears on mouseover to indicate clickable areas
+- **Selected state**: Solid border, label, resize handles, and configuration panel appear
+- **Deselection**: Click anywhere on canvas outside zones to hide all indicators
+- **Seamless editing**: Switch between clean preview and editing mode with single click
+
+This allows users to **appreciate the final badge appearance** while configuring, without visual clutter from editing overlays.
+
 ### Default Configuration
 
 The "Load Default Config" button loads the **original hardcoded layout**:

@@ -196,16 +196,17 @@
 
 .text-zone {
     position: absolute;
-    border: 2px dashed var(--accent-primary);
-    background: rgba(99, 102, 241, 0.05);
-    cursor: move;
+    border: 2px solid transparent;
+    background: transparent;
+    cursor: pointer;
     pointer-events: all;
-    transition: all 0.1s;
+    transition: all 0.2s;
 }
 
 .text-zone:hover {
-    background: rgba(99, 102, 241, 0.08);
-    border-color: var(--accent-hover);
+    background: rgba(99, 102, 241, 0.03);
+    border-color: rgba(99, 102, 241, 0.3);
+    border-style: dashed;
 }
 
 .text-zone.selected {
@@ -214,6 +215,7 @@
     background: rgba(16, 185, 129, 0.08);
     box-shadow: 0 0 0 2px var(--success);
     z-index: 10;
+    cursor: move;
 }
 
 .text-zone-label {
@@ -228,9 +230,11 @@
     border-radius: 4px 4px 0 0;
     white-space: nowrap;
     pointer-events: none;
+    display: none; /* Hidden by default */
 }
 
 .text-zone.selected .text-zone-label {
+    display: block; /* Show on selected zone */
     background: var(--success);
 }
 
@@ -331,23 +335,26 @@
 
 .qr-zone {
     position: absolute;
-    border: 2px dashed var(--warning);
-    background: rgba(245, 158, 11, 0.1);
+    border: 2px solid transparent;
+    background: transparent;
     border-radius: 4px;
-    cursor: move;
+    cursor: pointer;
     pointer-events: all;
-    transition: all 0.1s;
+    transition: all 0.2s;
 }
 
 .qr-zone:hover {
-    background: rgba(245, 158, 11, 0.15);
-    border-color: var(--warning);
+    background: rgba(245, 158, 11, 0.05);
+    border-color: rgba(245, 158, 11, 0.4);
+    border-style: dashed;
 }
 
 .qr-zone.selected {
     border-style: solid;
-    background: rgba(245, 158, 11, 0.2);
+    border-color: var(--warning);
+    background: rgba(245, 158, 11, 0.15);
     box-shadow: 0 0 0 2px var(--warning);
+    cursor: move;
 }
 
 .qr-zone-label {
@@ -363,6 +370,11 @@
     border-radius: 4px 4px 0 0;
     white-space: nowrap;
     pointer-events: none;
+    display: none; /* Hidden by default */
+}
+
+.qr-zone.selected .qr-zone-label {
+    display: block; /* Show on selected zone */
 }
 
 /* ===========================

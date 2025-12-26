@@ -73,6 +73,9 @@ function initializeTemplateEditor() {
         return;
     }
 
+    // Reset selection state
+    selectedZone = null;
+
     // Load default configuration or from current project
     if (currentProject && currentProject.textZones && currentProject.textZones.length > 0) {
         // Convert decimals to percentages for editor (0.05 → 5)
@@ -113,6 +116,10 @@ function initializeTemplateEditor() {
         zonesOverlay.style.width = templateImg.width + 'px';
         zonesOverlay.style.height = templateImg.height + 'px';
     }
+
+    // Hide configuration panels by default
+    hideZoneConfigPanel();
+    hideQRConfigPanel();
 
     // Render zones
     renderAllZones();
@@ -570,6 +577,21 @@ function setupEditorEventListeners() {
     if (!zonesOverlay) return;
 
     zonesOverlay.addEventListener('mousedown', handleMouseDown);
+
+    // Also listen on canvas area to detect clicks outside zones
+    const canvasArea = document.querySelector('.template-canvas-area');
+    if (canvasArea) {
+        canvasArea.addEventListener('mousedown', (e) => {
+            // Only handle if clicking directly on canvas area (not on overlay elements)
+            if (e.target === canvasArea || e.target === editorCanvas || e.target.classList.contains('template-canvas-wrapper')) {
+                selectedZone = null;
+                hideZoneConfigPanel();
+                hideQRConfigPanel();
+                renderAllZones();
+            }
+        });
+    }
+
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
 }
