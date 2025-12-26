@@ -476,6 +476,7 @@ SIDEBAR: Configuration Panel
 
 **Text Zones**:
 - **Drag to move**: Click and drag zone to reposition
+- **Keyboard arrows**: Use arrow keys to move selected zone (1px per press, 10px with Shift)
 - **Resize**: 8 resize handles on corners and edges (nw, ne, sw, se, n, s, e, w)
 - **Select**: Click zone to show configuration panel
 - **Add**: "Add Text Zone" button creates new zone at center
@@ -483,6 +484,7 @@ SIDEBAR: Configuration Panel
 
 **QR Code Zone**:
 - **Drag to move**: Reposition QR code on badge
+- **Keyboard arrows**: Use arrow keys to move selected QR zone (1px per press, 10px with Shift)
 - **Resize**: Single size slider (maintains square aspect ratio)
 - **Enable/disable**: Checkbox to show/hide QR code
 - **Logo customization**: "Changer le logo" button in QR Code properties section to upload custom logo

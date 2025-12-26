@@ -127,8 +127,57 @@ function initializeTemplateEditor() {
     hideZoneConfigPanel();
     hideQRConfigPanel();
 
-    // Render zones
-    renderAllZones();
+    // Load custom QR logo if exists in project and wait for it to load
+    if (currentProject && currentProject.qrZone && currentProject.qrZone.logoBlob) {
+        blobToDataURL(currentProject.qrZone.logoBlob).then(dataURL => {
+            // Clear QR cache to force regeneration with potentially new logo
+            qrSampleImg = null;
+            qrSampleSize = null;
+
+            const needsLoad = qrLogoImg.src !== dataURL;
+            qrLogoImg.src = dataURL;
+
+            const renderWhenReady = () => {
+                renderAllZones();
+            };
+
+            if (needsLoad) {
+                qrLogoImg.onload = renderWhenReady;
+            } else if (qrLogoImg.complete) {
+                // Image already loaded, render immediately
+                renderWhenReady();
+            } else {
+                qrLogoImg.onload = renderWhenReady;
+            }
+
+            const qrLogoName = document.getElementById('qrLogoName');
+            if (qrLogoName && currentProject.qrZone.logoPath) {
+                qrLogoName.textContent = currentProject.qrZone.logoPath;
+            }
+        });
+    } else {
+        // Reset to default logo
+        const needsLoad = qrLogoImg.src !== "logo-qr.png";
+        qrLogoImg.src = "logo-qr.png";
+
+        const renderWhenReady = () => {
+            renderAllZones();
+        };
+
+        if (needsLoad) {
+            qrLogoImg.onload = renderWhenReady;
+        } else if (qrLogoImg.complete) {
+            // Image already loaded, render immediately
+            renderWhenReady();
+        } else {
+            qrLogoImg.onload = renderWhenReady;
+        }
+
+        const qrLogoName = document.getElementById('qrLogoName');
+        if (qrLogoName) {
+            qrLogoName.textContent = "logo-qr.png";
+        }
+    }
 
     // Setup event listeners
     setupEditorEventListeners();
@@ -688,6 +737,7 @@ function setupEditorEventListeners() {
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('keydown', handleKeyDown);
 }
 
 function handleMouseDown(e) {
@@ -750,6 +800,44 @@ function handleMouseUp() {
     isDragging = false;
     isResizing = false;
     resizeHandle = null;
+}
+
+function handleKeyDown(e) {
+    // Only handle arrow keys when template editor is active and a zone is selected
+    if (!templateEditorActive || !selectedZone) return;
+
+    // Ignore if user is typing in an input field
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+        return;
+    }
+
+    const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+    if (!arrowKeys.includes(e.key)) return;
+
+    e.preventDefault(); // Prevent page scrolling
+
+    // Movement increment: 1px normal, 10px with Shift
+    const increment = e.shiftKey ? 10 : 1;
+
+    let deltaX = 0;
+    let deltaY = 0;
+
+    switch(e.key) {
+        case 'ArrowLeft':
+            deltaX = -increment;
+            break;
+        case 'ArrowRight':
+            deltaX = increment;
+            break;
+        case 'ArrowUp':
+            deltaY = -increment;
+            break;
+        case 'ArrowDown':
+            deltaY = increment;
+            break;
+    }
+
+    handleDrag(selectedZone, deltaX, deltaY);
 }
 
 function handleDrag(zoneId, deltaX, deltaY) {
@@ -861,6 +949,12 @@ async function saveConfigurationToProject() {
         y: qrZone.y / 100,
         size: qrZone.size / 100
     };
+
+    // Preserve logo data if it exists
+    if (currentProject.qrZone && currentProject.qrZone.logoBlob) {
+        qrConfigToSave.logoBlob = currentProject.qrZone.logoBlob;
+        qrConfigToSave.logoPath = currentProject.qrZone.logoPath;
+    }
 
     currentProject.textZones = configToSave;
     currentProject.qrZone = qrConfigToSave;
@@ -1039,6 +1133,55 @@ document.addEventListener('DOMContentLoaded', () => {
         qrSize.addEventListener('input', () => {
             applyQRConfig();
             renderAllZones();
+        });
+    }
+
+    // QR Logo selection
+    const selectQrLogoBtn = document.getElementById('selectQrLogoBtn');
+    const qrLogoInput = document.getElementById('qrLogoInput');
+    const qrLogoName = document.getElementById('qrLogoName');
+
+    if (selectQrLogoBtn && qrLogoInput) {
+        selectQrLogoBtn.addEventListener('click', () => {
+            qrLogoInput.click();
+        });
+
+        qrLogoInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Update logo name display
+            if (qrLogoName) {
+                qrLogoName.textContent = file.name;
+            }
+
+            // Load new logo image
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                qrLogoImg.src = event.target.result;
+                qrLogoImg.onload = async () => {
+                    // Save logo to project as Blob
+                    if (currentProject && projectMode) {
+                        const blob = await fileToBlob(file);
+                        if (!currentProject.qrZone) {
+                            currentProject.qrZone = getDefaultQRConfig();
+                        }
+                        currentProject.qrZone.logoBlob = blob;
+                        currentProject.qrZone.logoPath = file.name;
+                        await saveProjectToDB(currentProject);
+                    }
+
+                    // Clear QR cache to force regeneration with new logo
+                    qrSampleImg = null;
+                    qrSampleSize = null;
+
+                    // Re-render with new logo
+                    renderAllZones();
+
+                    showStatus('templateStatus', `✓ Logo du QR Code mis à jour : ${file.name}`, 'success');
+                };
+            };
+            reader.readAsDataURL(file);
         });
     }
 });
