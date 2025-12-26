@@ -8,6 +8,10 @@ let editorCanvas = null;
 let editorCtx = null;
 let zonesOverlay = null;
 
+// QR code cache to avoid regeneration during drag
+let qrSampleImg = null;
+let qrSampleSize = null;
+
 // === Text Rendering Helpers (copied from badge-renderer.js) ===
 
 function capitalize(str) {
@@ -73,8 +77,10 @@ function initializeTemplateEditor() {
         return;
     }
 
-    // Reset selection state
+    // Reset selection state and QR cache
     selectedZone = null;
+    qrSampleImg = null;
+    qrSampleSize = null;
 
     // Load default configuration or from current project
     if (currentProject && currentProject.textZones && currentProject.textZones.length > 0) {
@@ -302,7 +308,12 @@ function renderAllZones() {
         drawZoneSampleText(zone);
     });
 
-    // Step 3: Create HTML overlay elements for interaction
+    // Step 3: Draw QR code sample on canvas
+    if (qrZone && qrZone.enabled) {
+        drawQRSample();
+    }
+
+    // Step 4: Create HTML overlay elements for interaction
     zonesOverlay.innerHTML = '';
 
     // Render text zones overlays
@@ -366,6 +377,89 @@ function drawZoneSampleText(zone) {
 
     // Draw multiline text with same logic as badge-renderer.js
     drawMultilineTextOnEditor(transformedText, x, y, lineHeight, maxWidth, zone.maxCharsPerLine);
+}
+
+function drawQRSample() {
+    if (!editorCanvas || !editorCtx || !qrZone) return;
+
+    const canvasWidth = editorCanvas.width;
+    const canvasHeight = editorCanvas.height;
+
+    // Calculate QR code size and position (same as badge-renderer.js)
+    const qrSize = canvasWidth * (qrZone.size / 100);
+    const xPos = (canvasWidth * (qrZone.x / 100)) - (qrSize / 2);
+    const yPos = canvasHeight * (qrZone.y / 100);
+
+    // If QR code is already generated and size hasn't changed, just redraw it
+    if (qrSampleImg && qrSampleSize === qrSize) {
+        // Draw cached QR code on canvas
+        editorCtx.drawImage(qrSampleImg, xPos, yPos, qrSize, qrSize);
+
+        // Draw logo overlay at center
+        const logoSize = qrSize * (qrZone.logoSize || 0.30);
+        const logoX = xPos + (qrSize / 2) - (logoSize / 2);
+        const logoY = yPos + (qrSize / 2) - (logoSize / 2);
+
+        if (qrLogoImg && qrLogoImg.complete && qrLogoImg.naturalHeight !== 0) {
+            editorCtx.imageSmoothingEnabled = true;
+            editorCtx.imageSmoothingQuality = 'high';
+            editorCtx.drawImage(qrLogoImg, logoX, logoY, logoSize, logoSize);
+        }
+        return;
+    }
+
+    // Generate new QR code only if size changed or first time
+    const qrContainer = document.createElement('div');
+    qrContainer.id = 'qr-editor-temp';
+    qrContainer.style.display = 'none';
+    document.body.appendChild(qrContainer);
+
+    // Generate QR code with sample data
+    try {
+        new QRCode(qrContainer, {
+            text: "https://devfest.gdglibreville.com",
+            width: qrSize,
+            height: qrSize,
+            colorDark: "#000000",
+            colorLight: "rgba(255,255,255,0)",
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    } catch (error) {
+        console.error('Error generating QR code:', error);
+        document.body.removeChild(qrContainer);
+        return;
+    }
+
+    // Wait for QR code generation and draw it on canvas
+    setTimeout(() => {
+        const qrImg = qrContainer.querySelector('img');
+
+        if (!qrImg) {
+            document.body.removeChild(qrContainer);
+            return;
+        }
+
+        // Cache the generated QR code image
+        qrSampleImg = qrImg;
+        qrSampleSize = qrSize;
+
+        // Draw QR code on canvas
+        editorCtx.drawImage(qrImg, xPos, yPos, qrSize, qrSize);
+
+        // Draw logo overlay at center
+        const logoSize = qrSize * (qrZone.logoSize || 0.30);
+        const logoX = xPos + (qrSize / 2) - (logoSize / 2);
+        const logoY = yPos + (qrSize / 2) - (logoSize / 2);
+
+        if (qrLogoImg && qrLogoImg.complete && qrLogoImg.naturalHeight !== 0) {
+            editorCtx.imageSmoothingEnabled = true;
+            editorCtx.imageSmoothingQuality = 'high';
+            editorCtx.drawImage(qrLogoImg, logoX, logoY, logoSize, logoSize);
+        }
+
+        // Clean up temporary container
+        document.body.removeChild(qrContainer);
+    }, 100);
 }
 
 function renderZoneOverlay(zone) {

@@ -514,8 +514,15 @@ The template editor now uses **canvas-based text rendering** with the same funct
 **How it works**:
 1. `renderAllZones()` redraws template image on canvas
 2. Sample text drawn directly on canvas for each zone
-3. Transparent HTML overlays created for drag/drop interaction (don't obscure text)
-4. Changes to properties instantly update canvas rendering
+3. **QR code sample** generated and drawn with logo overlay (cached for performance)
+4. Transparent HTML overlays created for drag/drop interaction (don't obscure text)
+5. Changes to properties instantly update canvas rendering
+
+**QR Code Preview**:
+- Sample QR code displayed in editor with logo overlay at center
+- Uses same rendering logic as badge generation (identical appearance)
+- **Performance optimization**: QR code cached and only regenerated when size changes
+- Prevents flickering during drag operations by reusing cached image
 
 ### Clean Visual Interface
 
