@@ -925,6 +925,62 @@ function handleResize(zoneId, deltaX, deltaY) {
     renderAllZones();
 }
 
+// === Template Change ===
+
+async function handleTemplateChange(file) {
+    if (!file.type.match('image.*')) {
+        showStatus('templateStatus', '⚠ Veuillez sélectionner une image', 'warning');
+        return;
+    }
+
+    try {
+        // Load the new image
+        const reader = new FileReader();
+
+        const imageLoaded = new Promise((resolve, reject) => {
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = e.target.result;
+            };
+            reader.onerror = reject;
+        });
+
+        reader.readAsDataURL(file);
+        const newImg = await imageLoaded;
+
+        // Update template image in app.js
+        templateImg.src = newImg.src;
+        await new Promise(resolve => {
+            templateImg.onload = resolve;
+        });
+
+        // Update canvas size to match new template
+        editorCanvas.width = newImg.width;
+        editorCanvas.height = newImg.height;
+
+        // Save new template to current project
+        if (currentProject) {
+            const blob = await fileToBlob(file);
+            currentProject.template = {
+                imageBlob: blob,
+                width: newImg.width,
+                height: newImg.height
+            };
+            await saveProjectToDB(currentProject);
+        }
+
+        // Re-render all zones on new template
+        renderAllZones();
+
+        showStatus('templateStatus', '✓ Template mis à jour', 'success');
+    } catch (error) {
+        console.error('Error changing template:', error);
+        showStatus('templateStatus', '⚠ Erreur lors du changement de template', 'error');
+    }
+}
+
 // === Save/Load Configuration ===
 
 async function saveConfigurationToProject() {
@@ -999,6 +1055,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const addTextZoneBtn = document.getElementById('addTextZoneBtn');
     if (addTextZoneBtn) {
         addTextZoneBtn.addEventListener('click', createTextZone);
+    }
+
+    // Change template
+    const changeTemplateBtn = document.getElementById('changeTemplateBtn');
+    const changeTemplateInput = document.getElementById('changeTemplateInput');
+    if (changeTemplateBtn && changeTemplateInput) {
+        changeTemplateBtn.addEventListener('click', () => {
+            changeTemplateInput.click();
+        });
+
+        changeTemplateInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                await handleTemplateChange(file);
+                e.target.value = ''; // Reset input
+            }
+        });
     }
 
     // Load default config

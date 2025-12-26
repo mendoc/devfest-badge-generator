@@ -450,6 +450,7 @@ The template editor opens as a **full-screen modal** after template upload:
 SIDEBAR: Configuration Panel
 ┌────────────────────────────────────┐
 │ Général                            │
+│ [🖼️ Changer le template]          │
 │ [Charger config par défaut]        │
 │                                    │
 │ Zone: Prénom (when selected)      │
@@ -546,6 +547,16 @@ The editor provides a **distraction-free preview** by hiding zone indicators by 
 - **Seamless editing**: Switch between clean preview and editing mode with single click
 
 This allows users to **appreciate the final badge appearance** while configuring, without visual clutter from editing overlays.
+
+### Template Management
+
+The "Général" section provides template and configuration management:
+
+- **Changer le template**: Upload a new template image without losing configured zones
+  - New template automatically saved to current project
+  - Canvas resizes to match new template dimensions
+  - All zones re-rendered on new template
+  - Useful for testing different designs or correcting an incorrect template
 
 ### Default Configuration
 
