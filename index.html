@@ -75,6 +75,15 @@
 
         <!-- Configuration panel -->
         <div class="template-config-panel">
+            <!-- General section (always visible) -->
+            <div class="config-section">
+                <div class="config-section-title">Général</div>
+
+                <button class="btn btn-secondary btn-block" id="loadDefaultConfigBtn">
+                    <span>⚙️</span> Charger config par défaut
+                </button>
+            </div>
+
             <!-- Zone config -->
             <div id="zoneConfigSection" class="config-section hidden">
                 <div class="config-section-title" id="zoneConfigTitle">Zone sélectionnée</div>
@@ -210,13 +219,17 @@
                     <label class="config-label">Taille (%)</label>
                     <input type="number" id="qrSize" class="config-input" value="28" min="5" max="50" step="0.1">
                 </div>
-            </div>
 
-            <!-- Preset actions -->
-            <div class="config-section">
-                <button class="btn btn-secondary btn-block" id="loadDefaultConfigBtn">
-                    <span>⚙️</span> Charger config par défaut
-                </button>
+                <div class="config-field">
+                    <label class="config-label">Logo du QR Code</label>
+                    <div class="file-input-wrapper">
+                        <button class="btn btn-secondary btn-sm btn-block" id="selectQrLogoBtn">
+                            <span>🖼️</span> Changer le logo
+                        </button>
+                        <input type="file" id="qrLogoInput" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="config-hint" id="qrLogoName">logo-qr.png</div>
+                </div>
             </div>
         </div>
     </div>

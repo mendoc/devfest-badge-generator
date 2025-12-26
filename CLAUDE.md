@@ -233,7 +233,8 @@ Each project is stored as an object with the following schema:
     y: 0.32,                      // Position Y (32% of canvas height)
     size: 0.28,                   // QR size (28% of canvas width)
     logoSize: 0.30,               // Logo size (30% of QR size)
-    logoPath: "logo-qr.png",      // Logo image path
+    logoPath: "logo-qr.png",      // Logo image path (default)
+    logoBlob: Blob,               // Custom logo as Blob (optional)
     correctLevel: "M"             // "L" | "M" | "Q" | "H"
   },
 
@@ -448,8 +449,10 @@ The template editor opens as a **full-screen modal** after template upload:
 
 SIDEBAR: Configuration Panel
 ┌────────────────────────────────────┐
-│ Zone: Prénom                       │
+│ Général                            │
+│ [Charger config par défaut]        │
 │                                    │
+│ Zone: Prénom (when selected)      │
 │ CSV Field: [prenom        ▼]      │
 │ Position X: [5%  ]  Y: [44% ]     │
 │ Width: [45% ]  Height: [10% ]     │
@@ -459,8 +462,13 @@ SIDEBAR: Configuration Panel
 │ Transform: [Capitalize ▼]         │
 │ Max chars/line: [16]              │
 │ Line height: [1.2]                │
-│                                    │
 │ [Delete Zone]  [Apply]             │
+│                                    │
+│ QR Code                            │
+│ ☑ Activer le QR Code              │
+│ Position X: [75% ] Y: [32% ]      │
+│ Taille: [28% ]                    │
+│ [🖼️ Changer le logo]              │
 └────────────────────────────────────┘
 ```
 
@@ -477,6 +485,7 @@ SIDEBAR: Configuration Panel
 - **Drag to move**: Reposition QR code on badge
 - **Resize**: Single size slider (maintains square aspect ratio)
 - **Enable/disable**: Checkbox to show/hide QR code
+- **Logo customization**: "Changer le logo" button in QR Code properties section to upload custom logo
 - **Logo size**: Adjust logo overlay size within QR code
 
 ### Configuration Properties
