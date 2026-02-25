@@ -330,19 +330,18 @@ function updateDuplicateHighlighting() {
 
 // Handle row deletion
 function handleDeleteRow(rowIndex) {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer la ligne ${rowIndex + 1} ?`)) {
+    const prenom = smartGetField(participantsEdited[rowIndex], 'prenom');
+    const nom = smartGetField(participantsEdited[rowIndex], 'nom');
+    const name = (prenom || nom) ? `${prenom} ${nom}`.trim() : `ligne ${rowIndex + 1}`;
+
+    showConfirmDialog(`Supprimer "${name}" ?`, () => {
         participantsEdited.splice(rowIndex, 1);
-
-        // Re-detect duplicates
         detectDuplicates();
-
-        // Re-render table and warnings
         renderDuplicateWarnings();
         renderEditorTable();
         updateVisibleRowCount();
-
-        showStatus('csvStatus', `✓ Ligne ${rowIndex + 1} supprimée`, 'success');
-    }
+        showStatus('csvStatus', `✓ Participant supprimé`, 'success');
+    }, 'Supprimer');
 }
 
 // Handle add new row

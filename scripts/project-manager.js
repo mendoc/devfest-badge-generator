@@ -164,7 +164,7 @@ async function exportProjectAsJSON(projectId) {
         throw new Error(`Project "${projectId}" not found`);
     }
 
-    // Convert Blob to base64 for JSON export
+    // Convert Blobs to base64 for JSON serialisation
     let exportData = { ...project };
 
     if (project.template && project.template.imageBlob) {
@@ -174,6 +174,12 @@ async function exportProjectAsJSON(projectId) {
             width: project.template.width,
             height: project.template.height
         };
+    }
+
+    if (project.qrZone && project.qrZone.logoBlob) {
+        const logoBase64 = await blobToBase64(project.qrZone.logoBlob);
+        exportData.qrZone = { ...project.qrZone, logoData: logoBase64 };
+        delete exportData.qrZone.logoBlob;
     }
 
     const jsonString = JSON.stringify(exportData, null, 2);
@@ -196,7 +202,7 @@ async function importProjectFromJSON(jsonString) {
         // Generate new ID to avoid conflicts
         const projectId = projectData.name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
 
-        // Convert base64 back to Blob if present
+        // Restore template blob
         if (projectData.template && projectData.template.imageData) {
             const blob = await base64ToBlob(projectData.template.imageData);
             projectData.template = {
@@ -204,6 +210,13 @@ async function importProjectFromJSON(jsonString) {
                 width: projectData.template.width,
                 height: projectData.template.height
             };
+        }
+
+        // Restore QR logo blob
+        if (projectData.qrZone && projectData.qrZone.logoData) {
+            const logoBlob = await base64ToBlob(projectData.qrZone.logoData);
+            projectData.qrZone = { ...projectData.qrZone, logoBlob };
+            delete projectData.qrZone.logoData;
         }
 
         const project = {
@@ -388,21 +401,23 @@ async function handleProjectDelete(projectId) {
     const project = await loadProjectFromDB(projectId);
     if (!project) return;
 
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le projet "${project.name}" ?\n\nCette action est irréversible.`)) {
-        try {
-            await deleteProjectFromDB(projectId);
-            await renderProjectList();
-            showStatus('templateStatus', `✓ Projet "${project.name}" supprimé`, 'success');
-
-            // If deleting current project, reset
-            if (currentProject && currentProject.id === projectId) {
-                currentProject = null;
+    showConfirmDialog(
+        `Supprimer le projet "${project.name}" ? Cette action est irréversible.`,
+        async () => {
+            try {
+                await deleteProjectFromDB(projectId);
+                await renderProjectList();
+                showStatus('templateStatus', `✓ Projet "${project.name}" supprimé`, 'success');
+                if (currentProject && currentProject.id === projectId) {
+                    currentProject = null;
+                }
+            } catch (error) {
+                console.error('Error deleting project:', error);
+                showStatus('templateStatus', `✗ Erreur lors de la suppression: ${error.message}`, 'error');
             }
-        } catch (error) {
-            console.error('Error deleting project:', error);
-            showStatus('templateStatus', `✗ Erreur lors de la suppression: ${error.message}`, 'error');
-        }
-    }
+        },
+        'Supprimer'
+    );
 }
 
 // Handle project export

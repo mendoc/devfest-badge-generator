@@ -56,6 +56,7 @@ async function generateBadgeForParticipant(p) {
             qrData = qrData.normalize('NFC');
         }
 
+        const correctLevel = QRCode.CorrectLevel[qrConfig.correctLevel] || QRCode.CorrectLevel.M;
         try {
             new QRCode(qrContainer, {
                 text: qrData,
@@ -63,7 +64,7 @@ async function generateBadgeForParticipant(p) {
                 height: qrSize,
                 colorDark: "#000000",
                 colorLight: "rgba(255,255,255,0)",
-                correctLevel: QRCode.CorrectLevel.M
+                correctLevel: correctLevel
             });
         } catch (error) {
             try {
@@ -77,7 +78,7 @@ async function generateBadgeForParticipant(p) {
                 });
             } catch (e2) {
                 new QRCode(qrContainer, {
-                    text: "https://devfest.gdglibreville.com",
+                    text: QR_FALLBACK_URL,
                     width: qrSize,
                     height: qrSize,
                     colorDark: "#000000",
@@ -87,28 +88,41 @@ async function generateBadgeForParticipant(p) {
             }
         }
 
-        setTimeout(() => {
-            const qrImg = qrContainer.querySelector('img');
+        const xPos = (canvas.width * qrConfig.x) - (qrSize / 2);
+        const yPos = canvas.height * qrConfig.y;
 
-            if (qrImg) {
-                const xPos = (canvas.width * qrConfig.x) - (qrSize / 2);
-                const yPos = canvas.height * qrConfig.y;
-
-                ctx.drawImage(qrImg, xPos, yPos, qrSize, qrSize);
-
+        function drawQRAndResolve(qrEl) {
+            if (qrEl) {
+                ctx.drawImage(qrEl, xPos, yPos, qrSize, qrSize);
                 const logoSize = qrSize * qrConfig.logoSize;
                 const logoX = xPos + (qrSize / 2) - (logoSize / 2);
                 const logoY = yPos + (qrSize / 2) - (logoSize / 2);
-
                 if (qrLogoImg.complete && qrLogoImg.naturalHeight !== 0) {
                     ctx.imageSmoothingEnabled = true;
                     ctx.imageSmoothingQuality = 'high';
                     ctx.drawImage(qrLogoImg, logoX, logoY, logoSize, logoSize);
                 }
             }
-
             resolve();
-        }, 400);
+        }
+
+        // QRCode.js creates a canvas synchronously — use it directly to avoid timeout
+        const qrCanvas = qrContainer.querySelector('canvas');
+        if (qrCanvas) {
+            drawQRAndResolve(qrCanvas);
+        } else {
+            const qrImg = qrContainer.querySelector('img');
+            if (qrImg) {
+                if (qrImg.complete && qrImg.naturalWidth > 0) {
+                    drawQRAndResolve(qrImg);
+                } else {
+                    qrImg.onload = () => drawQRAndResolve(qrImg);
+                    qrImg.onerror = () => drawQRAndResolve(null);
+                }
+            } else {
+                drawQRAndResolve(null);
+            }
+        }
     });
 }
 

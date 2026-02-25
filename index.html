@@ -31,7 +31,7 @@
     <div class="modal-content project-modal">
         <div class="modal-header">
             <h3 class="modal-title">Mes projets Baba</h3>
-            <button class="modal-close" id="projectModalClose">&times;</button>
+            <button class="modal-close" id="projectModalClose" aria-label="Fermer">&times;</button>
         </div>
         <div class="modal-body">
             <p class="modal-description">Sélectionnez un projet existant ou créez-en un nouveau</p>
@@ -47,8 +47,11 @@
             <!-- Project list -->
             <div id="projectList" class="project-list"></div>
 
-            <!-- Continue without project -->
+            <!-- Import / Continue without project -->
             <div class="project-continue">
+                <button class="btn btn-secondary" id="importProjectBtn">
+                    <span>📥</span> Importer un projet (JSON)
+                </button>
                 <button class="btn btn-secondary" id="continueWithoutProjectBtn">
                     Continuer sans projet (session uniquement)
                 </button>
@@ -61,7 +64,7 @@
 <div id="templateEditorModal" class="modal template-editor-modal hidden">
     <div class="template-editor-header">
         <h2 class="template-editor-title">Éditeur de Template</h2>
-        <button class="modal-close" id="closeTemplateEditorBtn">&times;</button>
+        <button class="modal-close" id="closeTemplateEditorBtn" aria-label="Fermer l'éditeur">&times;</button>
     </div>
 
     <div class="template-editor-container">
@@ -96,12 +99,12 @@
                 <div class="config-section-title" id="zoneConfigTitle">Zone sélectionnée</div>
 
                 <div class="config-field">
-                    <label class="config-label">Nom de la zone</label>
+                    <label class="config-label" for="zoneLabel">Nom de la zone</label>
                     <input type="text" id="zoneLabel" class="config-input" placeholder="Ex: Prénom">
                 </div>
 
                 <div class="config-field">
-                    <label class="config-label">Champ CSV</label>
+                    <label class="config-label" for="zoneFieldSelect">Champ CSV</label>
                     <select id="zoneFieldSelect" class="config-select">
                         <option value="prenom">Prénom</option>
                         <option value="nom">Nom</option>
@@ -113,40 +116,40 @@
                 </div>
 
                 <div class="config-field">
-                    <label class="config-label">Texte d'exemple</label>
-                    <input type="text" id="zoneSampleText" class="config-input" placeholder="Ex: Jean Dupont">
+                    <label class="config-label" for="zoneSampleText">Texte d'exemple</label>
+                    <input type="text" id="zoneSampleText" class="config-input" placeholder="Ex: Jean Dupont" maxlength="80">
                 </div>
 
                 <div class="config-row">
                     <div class="config-field">
-                        <label class="config-label">Position X (%)</label>
+                        <label class="config-label" for="zonePosX">Position X (%)</label>
                         <input type="number" id="zonePosX" class="config-input" min="0" max="100" step="0.1">
                     </div>
                     <div class="config-field">
-                        <label class="config-label">Position Y (%)</label>
+                        <label class="config-label" for="zonePosY">Position Y (%)</label>
                         <input type="number" id="zonePosY" class="config-input" min="0" max="100" step="0.1">
                     </div>
                 </div>
 
                 <div class="config-row">
                     <div class="config-field">
-                        <label class="config-label">Largeur (%)</label>
+                        <label class="config-label" for="zoneWidth">Largeur (%)</label>
                         <input type="number" id="zoneWidth" class="config-input" min="1" max="100" step="0.1">
                     </div>
                     <div class="config-field">
-                        <label class="config-label">Hauteur (%)</label>
+                        <label class="config-label" for="zoneHeight">Hauteur (%)</label>
                         <input type="number" id="zoneHeight" class="config-input" min="1" max="100" step="0.1">
                     </div>
                 </div>
 
                 <div class="config-field">
-                    <label class="config-label">Taille de police (%)</label>
-                    <input type="number" id="zoneFontSize" class="config-input" min="1" max="20" step="0.1">
+                    <label class="config-label" for="zoneFontSize">Taille de police (%)</label>
+                    <input type="number" id="zoneFontSize" class="config-input" min="0.5" max="20" step="0.1">
                 </div>
 
                 <div class="config-row">
                     <div class="config-field">
-                        <label class="config-label">Police</label>
+                        <label class="config-label" for="zoneFontFamily">Police</label>
                         <select id="zoneFontFamily" class="config-select">
                             <option value="Roboto">Roboto</option>
                             <option value="Arial">Arial</option>
@@ -154,7 +157,7 @@
                         </select>
                     </div>
                     <div class="config-field">
-                        <label class="config-label">Graisse</label>
+                        <label class="config-label" for="zoneFontWeight">Graisse</label>
                         <select id="zoneFontWeight" class="config-select">
                             <option value="normal">Normal</option>
                             <option value="bold">Gras</option>
@@ -164,16 +167,16 @@
                 </div>
 
                 <div class="config-field">
-                    <label class="config-label">Couleur</label>
+                    <label class="config-label" for="zoneColorText">Couleur</label>
                     <div class="color-picker-wrapper">
                         <div class="color-preview" id="zoneColorPreview"></div>
                         <input type="text" id="zoneColorText" class="config-input" placeholder="#000000">
-                        <input type="color" id="zoneColorPicker">
+                        <input type="color" id="zoneColorPicker" aria-label="Sélecteur de couleur">
                     </div>
                 </div>
 
                 <div class="config-field">
-                    <label class="config-label">Transformation</label>
+                    <label class="config-label" for="zoneTextTransform">Transformation</label>
                     <select id="zoneTextTransform" class="config-select">
                         <option value="none">Aucune</option>
                         <option value="uppercase">MAJUSCULES</option>
@@ -183,12 +186,12 @@
                 </div>
 
                 <div class="config-field">
-                    <label class="config-label">Caractères max par ligne</label>
+                    <label class="config-label" for="zoneMaxChars">Caractères max par ligne</label>
                     <input type="number" id="zoneMaxChars" class="config-input" min="1" placeholder="Illimité">
                 </div>
 
                 <div class="config-field">
-                    <label class="config-label">Hauteur de ligne</label>
+                    <label class="config-label" for="zoneLineHeight">Hauteur de ligne</label>
                     <input type="number" id="zoneLineHeight" class="config-input" min="1" max="3" step="0.1" value="1.2">
                 </div>
 
@@ -213,17 +216,17 @@
 
                 <div class="config-row">
                     <div class="config-field">
-                        <label class="config-label">Position X (%)</label>
+                        <label class="config-label" for="qrPosX">Position X (%)</label>
                         <input type="number" id="qrPosX" class="config-input" value="75" min="0" max="100" step="0.1">
                     </div>
                     <div class="config-field">
-                        <label class="config-label">Position Y (%)</label>
+                        <label class="config-label" for="qrPosY">Position Y (%)</label>
                         <input type="number" id="qrPosY" class="config-input" value="32" min="0" max="100" step="0.1">
                     </div>
                 </div>
 
                 <div class="config-field">
-                    <label class="config-label">Taille (%)</label>
+                    <label class="config-label" for="qrSize">Taille (%)</label>
                     <input type="number" id="qrSize" class="config-input" value="28" min="5" max="50" step="0.1">
                 </div>
 
@@ -309,7 +312,7 @@
         <!-- Data Table Section -->
         <div class="editor-section">
             <div class="editor-toolbar">
-                <input type="text" id="searchInput" class="search-input" placeholder="Rechercher un participant...">
+                <input type="text" id="searchInput" class="search-input" placeholder="Rechercher un participant..." aria-label="Rechercher un participant">
                 <button class="btn btn-secondary" id="addRowBtn">
                     <span>➕</span> Ajouter
                 </button>
@@ -356,16 +359,16 @@
 
         <!-- Badge preview with side navigation -->
         <div class="badge-preview-container">
-            <button class="btn-nav btn-nav-left" id="prevBadgeBtn" disabled title="Participant précédent (←)">
-                <span>←</span>
+            <button class="btn-nav btn-nav-left" id="prevBadgeBtn" disabled title="Participant précédent (←)" aria-label="Badge précédent">
+                <span aria-hidden="true">←</span>
             </button>
 
             <div class="preview-area">
                 <canvas id="badgeCanvas"></canvas>
             </div>
 
-            <button class="btn-nav btn-nav-right" id="nextBadgeBtn" disabled title="Participant suivant (→)">
-                <span>→</span>
+            <button class="btn-nav btn-nav-right" id="nextBadgeBtn" disabled title="Participant suivant (→)" aria-label="Badge suivant">
+                <span aria-hidden="true">→</span>
             </button>
         </div>
 
@@ -401,7 +404,7 @@
     <div class="modal-content">
         <div class="modal-header">
             <h3 class="modal-title" id="mappingModalTitle">Sélectionner une colonne</h3>
-            <button class="modal-close" id="mappingModalClose">&times;</button>
+            <button class="modal-close" id="mappingModalClose" aria-label="Fermer">&times;</button>
         </div>
         <div class="modal-body">
             <p class="modal-description" id="mappingModalDescription">Choisissez la colonne CSV correspondante :</p>
@@ -414,7 +417,22 @@
     </div>
 </div>
 
+<!-- Confirm Dialog Modal -->
+<div id="confirmDialog" class="modal hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirmDialogMessage">
+    <div class="modal-overlay"></div>
+    <div class="modal-content" style="max-width: 420px;">
+        <div class="modal-body">
+            <p id="confirmDialogMessage" style="margin: 0; font-size: 0.9375rem;"></p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" id="confirmDialogCancel">Annuler</button>
+            <button class="btn btn-danger" id="confirmDialogConfirm">Confirmer</button>
+        </div>
+    </div>
+</div>
+
 <!-- Application Scripts -->
+<script src="scripts/text-utils.js"></script>
 <script src="scripts/app.js"></script>
 <script src="scripts/project-manager.js"></script>
 <script src="scripts/template-editor.js"></script>

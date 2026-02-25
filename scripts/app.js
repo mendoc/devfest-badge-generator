@@ -48,7 +48,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editTemplateBtn = document.getElementById('editTemplateBtn');
     if (editTemplateBtn) {
         editTemplateBtn.addEventListener('click', () => {
-            console.log('Edit template button clicked');
             showTemplateEditor();
         });
     }
@@ -56,7 +55,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const editCsvBtn = document.getElementById('editCsvBtn');
     if (editCsvBtn) {
         editCsvBtn.addEventListener('click', () => {
-            console.log('Edit CSV button clicked');
             // Show editor card and initialize editor
             const editorCard = document.getElementById('editorCard');
             if (editorCard) {
@@ -73,7 +71,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize IndexedDB
     try {
         db = await initDB();
-        console.log('IndexedDB initialized successfully');
     } catch (error) {
         console.error('Failed to initialize IndexedDB:', error);
         showStatus('templateStatus', '⚠ Erreur d\'initialisation de la base de données', 'error');
@@ -176,11 +173,47 @@ async function saveCurrentProject() {
     try {
         currentProject.updatedAt = new Date().toISOString();
         await saveProjectToDB(currentProject);
-        console.log(`Project "${currentProject.name}" saved successfully`);
     } catch (error) {
         console.error('Error saving project:', error);
         showStatus('templateStatus', `✗ Erreur de sauvegarde: ${error.message}`, 'error');
     }
+}
+
+// Custom confirmation dialog (replaces native confirm())
+// Usage: showConfirmDialog('Message?', () => doSomething(), 'Supprimer')
+function showConfirmDialog(message, onConfirm, confirmLabel = 'Confirmer') {
+    const dialog = document.getElementById('confirmDialog');
+    const messageEl = document.getElementById('confirmDialogMessage');
+    const confirmBtn = document.getElementById('confirmDialogConfirm');
+    const cancelBtn = document.getElementById('confirmDialogCancel');
+
+    if (!dialog) {
+        // Graceful fallback if modal not present
+        if (confirm(message)) onConfirm();
+        return;
+    }
+
+    messageEl.textContent = message;
+    confirmBtn.textContent = confirmLabel;
+    dialog.classList.remove('hidden');
+
+    // Trap focus: move initial focus to cancel (safer default)
+    cancelBtn.focus();
+
+    function cleanup() {
+        dialog.classList.add('hidden');
+        confirmBtn.onclick = null;
+        cancelBtn.onclick = null;
+        dialog.onkeydown = null;
+    }
+
+    confirmBtn.onclick = () => { cleanup(); onConfirm(); };
+    cancelBtn.onclick = cleanup;
+
+    // Close on Escape
+    dialog.onkeydown = (e) => {
+        if (e.key === 'Escape') cleanup();
+    };
 }
 
 // Status message display function
