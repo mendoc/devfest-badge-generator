@@ -175,6 +175,11 @@ body {
     display: none;
 }
 
+/* Confirm dialog must appear above all other modals (including template editor at z-index 2000) */
+#confirmDialog {
+    z-index: 3000;
+}
+
 .modal-overlay {
     position: absolute;
     top: 0;
