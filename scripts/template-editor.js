@@ -2,61 +2,19 @@
 // Drag & drop zones, configuration panel, and preset management
 
 // Editor state (templateEditorActive and selectedZone are in app.js)
+// capitalize, removeAccents, splitTextToFit, drawMultilineText are in text-utils.js
 let textZones = [];
 let qrZone = null;
 let editorCanvas = null;
 let editorCtx = null;
 let zonesOverlay = null;
 
-// QR code cache to avoid regeneration during drag
-let qrSampleImg = null;
+// QR code canvas cache to avoid regeneration during drag
+let qrSampleCanvas = null;
 let qrSampleSize = null;
 
-// === Text Rendering Helpers (copied from badge-renderer.js) ===
-
-function capitalize(str) {
-    if (!str) return "";
-    return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
-}
-
-function splitTextToFit(text, maxWidth, maxChars = null) {
-    const cleanText = text.trim().replace(/\s+/g, ' ');
-    const words = cleanText.split(' ').filter(word => word.length > 0);
-
-    if (words.length === 0) return [];
-
-    const lines = [];
-    let currentLine = words[0];
-
-    for (let i = 1; i < words.length; i++) {
-        const testLine = currentLine + ' ' + words[i];
-        const metrics = editorCtx.measureText(testLine);
-
-        const exceedsWidth = metrics.width > maxWidth;
-        const exceedsChars = maxChars && testLine.length > maxChars;
-
-        if (exceedsWidth || exceedsChars) {
-            lines.push(currentLine);
-            currentLine = words[i];
-        } else {
-            currentLine = testLine;
-        }
-    }
-    lines.push(currentLine);
-    return lines;
-}
-
-function drawMultilineTextOnEditor(text, x, startY, lineHeight, maxWidth, maxChars = null) {
-    const lines = splitTextToFit(text, maxWidth, maxChars);
-    let currentY = startY;
-
-    lines.forEach((line) => {
-        editorCtx.fillText(line, x, currentY);
-        currentY += lineHeight;
-    });
-
-    return currentY;
-}
+// requestAnimationFrame handle for throttled rendering
+let renderFramePending = false;
 
 // Drag state
 let isDragging = false;
@@ -79,7 +37,7 @@ function initializeTemplateEditor() {
 
     // Reset selection state and QR cache
     selectedZone = null;
-    qrSampleImg = null;
+    qrSampleCanvas = null;
     qrSampleSize = null;
 
     // Load default configuration or from current project
@@ -105,11 +63,8 @@ function initializeTemplateEditor() {
             qrZone = getDefaultQRZone();
         }
 
-        console.log('Loaded zones from project:', textZones);
-        console.log('Loaded QR zone from project:', qrZone);
     } else {
         loadDefaultConfiguration();
-        console.log('Loaded default configuration');
     }
 
     // Draw template on canvas
@@ -131,7 +86,7 @@ function initializeTemplateEditor() {
     if (currentProject && currentProject.qrZone && currentProject.qrZone.logoBlob) {
         blobToDataURL(currentProject.qrZone.logoBlob).then(dataURL => {
             // Clear QR cache to force regeneration with potentially new logo
-            qrSampleImg = null;
+            qrSampleCanvas = null;
             qrSampleSize = null;
 
             const needsLoad = qrLogoImg.src !== dataURL;
@@ -184,16 +139,11 @@ function initializeTemplateEditor() {
 }
 
 function showTemplateEditor() {
-    console.log('showTemplateEditor called');
     const modal = document.getElementById('templateEditorModal');
-    console.log('templateEditorModal element:', modal);
     if (modal) {
         modal.classList.remove('hidden');
         templateEditorActive = true;
-        console.log('Template editor modal shown, initializing...');
         initializeTemplateEditor();
-    } else {
-        console.error('templateEditorModal not found in DOM!');
     }
 }
 
@@ -322,12 +272,14 @@ function createTextZone() {
 }
 
 function deleteTextZone(zoneId) {
-    if (confirm('Supprimer cette zone de texte ?')) {
+    const zone = getZoneById(zoneId);
+    const label = zone ? zone.label : 'cette zone';
+    showConfirmDialog(`Supprimer la zone "${label}" ?`, () => {
         textZones = textZones.filter(z => z.id !== zoneId);
         selectedZone = null;
         renderAllZones();
         hideZoneConfigPanel();
-    }
+    }, 'Supprimer');
 }
 
 function selectZone(zoneId) {
@@ -345,6 +297,16 @@ function getZoneById(zoneId) {
 }
 
 // === Zone Rendering ===
+
+// Throttle renderAllZones to one call per animation frame during drag operations
+function scheduleRenderAllZones() {
+    if (renderFramePending) return;
+    renderFramePending = true;
+    requestAnimationFrame(() => {
+        renderFramePending = false;
+        renderAllZones();
+    });
+}
 
 function renderAllZones() {
     if (!zonesOverlay) return;
@@ -425,7 +387,7 @@ function drawZoneSampleText(zone) {
     editorCtx.textBaseline = "top"; // Make Y position the TOP of the text
 
     // Draw multiline text with same logic as badge-renderer.js
-    drawMultilineTextOnEditor(transformedText, x, y, lineHeight, maxWidth, zone.maxCharsPerLine);
+    drawMultilineText(editorCtx, transformedText, x, y, lineHeight, maxWidth, zone.maxCharsPerLine);
 }
 
 function drawQRSample() {
@@ -439,21 +401,22 @@ function drawQRSample() {
     const xPos = (canvasWidth * (qrZone.x / 100)) - (qrSize / 2);
     const yPos = canvasHeight * (qrZone.y / 100);
 
-    // If QR code is already generated and size hasn't changed, just redraw it
-    if (qrSampleImg && qrSampleSize === qrSize) {
-        // Draw cached QR code on canvas
-        editorCtx.drawImage(qrSampleImg, xPos, yPos, qrSize, qrSize);
-
-        // Draw logo overlay at center
+    // Helper to blit a QR element onto the editor canvas
+    function drawQRElement(qrEl) {
+        editorCtx.drawImage(qrEl, xPos, yPos, qrSize, qrSize);
         const logoSize = qrSize * (qrZone.logoSize || 0.30);
         const logoX = xPos + (qrSize / 2) - (logoSize / 2);
         const logoY = yPos + (qrSize / 2) - (logoSize / 2);
-
         if (qrLogoImg && qrLogoImg.complete && qrLogoImg.naturalHeight !== 0) {
             editorCtx.imageSmoothingEnabled = true;
             editorCtx.imageSmoothingQuality = 'high';
             editorCtx.drawImage(qrLogoImg, logoX, logoY, logoSize, logoSize);
         }
+    }
+
+    // If QR code is already cached and size hasn't changed, just redraw it
+    if (qrSampleCanvas && qrSampleSize === qrSize) {
+        drawQRElement(qrSampleCanvas);
         return;
     }
 
@@ -463,10 +426,9 @@ function drawQRSample() {
     qrContainer.style.display = 'none';
     document.body.appendChild(qrContainer);
 
-    // Generate QR code with sample data
     try {
         new QRCode(qrContainer, {
-            text: "https://devfest.gdglibreville.com",
+            text: QR_FALLBACK_URL,
             width: qrSize,
             height: qrSize,
             colorDark: "#000000",
@@ -479,36 +441,35 @@ function drawQRSample() {
         return;
     }
 
-    // Wait for QR code generation and draw it on canvas
-    setTimeout(() => {
-        const qrImg = qrContainer.querySelector('img');
-
-        if (!qrImg) {
-            document.body.removeChild(qrContainer);
-            return;
-        }
-
-        // Cache the generated QR code image
-        qrSampleImg = qrImg;
+    // QRCode.js creates a canvas synchronously — cache and use it directly
+    const qrCanvas = qrContainer.querySelector('canvas');
+    if (qrCanvas) {
+        qrSampleCanvas = qrCanvas;
         qrSampleSize = qrSize;
-
-        // Draw QR code on canvas
-        editorCtx.drawImage(qrImg, xPos, yPos, qrSize, qrSize);
-
-        // Draw logo overlay at center
-        const logoSize = qrSize * (qrZone.logoSize || 0.30);
-        const logoX = xPos + (qrSize / 2) - (logoSize / 2);
-        const logoY = yPos + (qrSize / 2) - (logoSize / 2);
-
-        if (qrLogoImg && qrLogoImg.complete && qrLogoImg.naturalHeight !== 0) {
-            editorCtx.imageSmoothingEnabled = true;
-            editorCtx.imageSmoothingQuality = 'high';
-            editorCtx.drawImage(qrLogoImg, logoX, logoY, logoSize, logoSize);
-        }
-
-        // Clean up temporary container
+        drawQRElement(qrCanvas);
         document.body.removeChild(qrContainer);
-    }, 100);
+    } else {
+        // Fallback: wait for img load
+        const qrImg = qrContainer.querySelector('img');
+        if (qrImg) {
+            const onLoad = () => {
+                qrSampleCanvas = qrImg;
+                qrSampleSize = qrSize;
+                drawQRElement(qrImg);
+                if (qrContainer.parentNode) document.body.removeChild(qrContainer);
+            };
+            if (qrImg.complete && qrImg.naturalWidth > 0) {
+                onLoad();
+            } else {
+                qrImg.onload = onLoad;
+                qrImg.onerror = () => {
+                    if (qrContainer.parentNode) document.body.removeChild(qrContainer);
+                };
+            }
+        } else {
+            document.body.removeChild(qrContainer);
+        }
+    }
 }
 
 function renderZoneOverlay(zone) {
@@ -866,7 +827,7 @@ function handleDrag(zoneId, deltaX, deltaY) {
         }
     }
 
-    renderAllZones();
+    scheduleRenderAllZones();
 }
 
 function handleResize(zoneId, deltaX, deltaY) {
@@ -922,7 +883,7 @@ function handleResize(zoneId, deltaX, deltaY) {
     document.getElementById('zoneWidth').value = zone.width.toFixed(1);
     document.getElementById('zoneHeight').value = zone.height.toFixed(1);
 
-    renderAllZones();
+    scheduleRenderAllZones();
 }
 
 // === Template Change ===
@@ -1024,8 +985,6 @@ async function saveConfigurationToProject() {
     const isEditingFromPreview = previewCard && !previewCard.classList.contains('hidden');
 
     if (isEditingFromPreview) {
-        // Re-render current badge with new configuration
-        console.log('Re-rendering badge with updated configuration');
         const currentIndex = parseInt(participantSelect.value);
         if (!isNaN(currentIndex) && participants[currentIndex]) {
             participantSelect.dispatchEvent(new Event('change'));
@@ -1045,9 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeBtn = document.getElementById('closeTemplateEditorBtn');
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
-            if (confirm('Fermer sans sauvegarder ?')) {
-                hideTemplateEditor();
-            }
+            showConfirmDialog('Fermer sans sauvegarder la configuration ?', hideTemplateEditor, 'Fermer');
         });
     }
 
@@ -1078,13 +1035,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadDefaultBtn = document.getElementById('loadDefaultConfigBtn');
     if (loadDefaultBtn) {
         loadDefaultBtn.addEventListener('click', () => {
-            if (confirm('Charger la configuration par défaut ? Les modifications actuelles seront perdues.')) {
+            showConfirmDialog('Charger la configuration par défaut ? Les modifications actuelles seront perdues.', () => {
                 loadDefaultConfiguration();
                 renderAllZones();
                 selectedZone = null;
                 hideZoneConfigPanel();
                 showStatus('templateStatus', '✓ Configuration par défaut chargée', 'success');
-            }
+            }, 'Charger');
         });
     }
 
@@ -1245,7 +1202,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // Clear QR cache to force regeneration with new logo
-                    qrSampleImg = null;
+                    qrSampleCanvas = null;
                     qrSampleSize = null;
 
                     // Re-render with new logo

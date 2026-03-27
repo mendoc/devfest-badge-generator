@@ -1,55 +1,7 @@
 // Badge Renderer - Canvas badge generation
-// Text formatting and QR code rendering
+// capitalize, removeAccents, splitTextToFit, drawMultilineText are in text-utils.js
 
-// Text formatting utilities
-function capitalize(str) {
-    if (!str) return "";
-    return str.toLowerCase().replace(/\b\w/g, char => char.toUpperCase());
-}
-
-function removeAccents(str) {
-    if (!str) return "";
-    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-}
-
-function splitTextToFit(text, maxWidth, maxChars = null) {
-    const cleanText = text.trim().replace(/\s+/g, ' ');
-    const words = cleanText.split(' ').filter(word => word.length > 0);
-
-    if (words.length === 0) return [];
-
-    const lines = [];
-    let currentLine = words[0];
-
-    for (let i = 1; i < words.length; i++) {
-        const testLine = currentLine + ' ' + words[i];
-        const metrics = ctx.measureText(testLine);
-
-        const exceedsWidth = metrics.width > maxWidth;
-        const exceedsChars = maxChars && testLine.length > maxChars;
-
-        if (exceedsWidth || exceedsChars) {
-            lines.push(currentLine);
-            currentLine = words[i];
-        } else {
-            currentLine = testLine;
-        }
-    }
-    lines.push(currentLine);
-    return lines;
-}
-
-function drawMultilineText(text, x, startY, lineHeight, maxWidth, maxChars = null) {
-    const lines = splitTextToFit(text, maxWidth, maxChars);
-    let currentY = startY;
-
-    lines.forEach((line) => {
-        ctx.fillText(line, x, currentY);
-        currentY += lineHeight;
-    });
-
-    return currentY;
-}
+const QR_FALLBACK_URL = "https://devfest.gdglibreville.com";
 
 // Get default text zones configuration
 function getDefaultTextZones() {
@@ -133,31 +85,14 @@ function getDefaultQRConfig() {
 // Render a text zone with configuration
 function renderTextZone(participant, zone) {
     const value = smartGetField(participant, zone.field);
-
-    console.log('renderTextZone called:', {
-        field: zone.field,
-        value: value,
-        zone: zone,
-        participant: participant
-    });
-
-    if (!value) {
-        console.warn(`No value found for field: ${zone.field}`);
-        return;
-    }
+    if (!value) return;
 
     // Apply text transformation
     let text = value;
     switch (zone.textTransform) {
-        case 'uppercase':
-            text = text.toUpperCase();
-            break;
-        case 'lowercase':
-            text = text.toLowerCase();
-            break;
-        case 'capitalize':
-            text = capitalize(text);
-            break;
+        case 'uppercase': text = text.toUpperCase(); break;
+        case 'lowercase': text = text.toLowerCase(); break;
+        case 'capitalize': text = capitalize(text); break;
     }
 
     // Calculate pixel values from decimals (0.05 = 5%)
@@ -167,23 +102,12 @@ function renderTextZone(participant, zone) {
     const fontSize = canvas.height * zone.fontSize;
     const lineHeight = fontSize * zone.lineHeight;
 
-    console.log('Rendering text:', {
-        text: text,
-        x: x,
-        y: y,
-        fontSize: fontSize,
-        font: `${zone.fontWeight} ${fontSize}px ${zone.fontFamily}`,
-        color: zone.color
-    });
-
-    // Set font
     ctx.font = `${zone.fontWeight} ${fontSize}px ${zone.fontFamily}`;
     ctx.fillStyle = zone.color;
     ctx.textAlign = "left";
-    ctx.textBaseline = "top"; // Make Y position the TOP of the text
+    ctx.textBaseline = "top";
 
-    // Draw text
-    drawMultilineText(text, x, y, lineHeight, maxWidth, zone.maxCharsPerLine);
+    drawMultilineText(ctx, text, x, y, lineHeight, maxWidth, zone.maxCharsPerLine);
 }
 
 // Template upload handler
@@ -315,6 +239,7 @@ document.addEventListener('DOMContentLoaded', () => {
             qrData = qrData.normalize('NFC');
         }
 
+        const correctLevel = QRCode.CorrectLevel[qrConfig.correctLevel] || QRCode.CorrectLevel.M;
         try {
             new QRCode(qrContainer, {
                 text: qrData,
@@ -322,7 +247,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 height: qrSize,
                 colorDark: "#000000",
                 colorLight: "rgba(255,255,255,0)",
-                correctLevel: QRCode.CorrectLevel.M
+                correctLevel: correctLevel
             });
         } catch (error) {
             try {
@@ -336,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             } catch (e2) {
                 new QRCode(qrContainer, {
-                    text: "https://devfest.gdglibreville.com",
+                    text: QR_FALLBACK_URL,
                     width: qrSize,
                     height: qrSize,
                     colorDark: "#000000",
@@ -346,35 +271,43 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        setTimeout(() => {
-            const qrImg = qrContainer.querySelector('img');
+        const xPos = (canvas.width * qrConfig.x) - (qrSize / 2);
+        const yPos = canvas.height * qrConfig.y;
 
-            if (!qrImg) {
-                downloadBtn.disabled = false;
-                const downloadPdfBtn = document.getElementById('downloadPdfBtn');
-                if (downloadPdfBtn) downloadPdfBtn.disabled = false;
-                return;
+        function drawQROnCanvas(qrEl) {
+            if (qrEl) {
+                ctx.drawImage(qrEl, xPos, yPos, qrSize, qrSize);
+                const logoSize = qrSize * qrConfig.logoSize;
+                const logoX = xPos + (qrSize / 2) - (logoSize / 2);
+                const logoY = yPos + (qrSize / 2) - (logoSize / 2);
+                if (qrLogoImg.complete && qrLogoImg.naturalHeight !== 0) {
+                    ctx.imageSmoothingEnabled = true;
+                    ctx.imageSmoothingQuality = 'high';
+                    ctx.drawImage(qrLogoImg, logoX, logoY, logoSize, logoSize);
+                }
             }
-
-            const xPos = (canvas.width * qrConfig.x) - (qrSize / 2);
-            const yPos = canvas.height * qrConfig.y;
-
-            ctx.drawImage(qrImg, xPos, yPos, qrSize, qrSize);
-
-            const logoSize = qrSize * qrConfig.logoSize;
-            const logoX = xPos + (qrSize / 2) - (logoSize / 2);
-            const logoY = yPos + (qrSize / 2) - (logoSize / 2);
-
-            if (qrLogoImg.complete && qrLogoImg.naturalHeight !== 0) {
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                ctx.drawImage(qrLogoImg, logoX, logoY, logoSize, logoSize);
-            }
-
             downloadBtn.disabled = false;
             const downloadPdfBtn = document.getElementById('downloadPdfBtn');
             if (downloadPdfBtn) downloadPdfBtn.disabled = false;
-        }, 300);
+        }
+
+        // QRCode.js creates a canvas synchronously — use it directly to avoid timeout
+        const qrCanvas = qrContainer.querySelector('canvas');
+        if (qrCanvas) {
+            drawQROnCanvas(qrCanvas);
+        } else {
+            const qrImg = qrContainer.querySelector('img');
+            if (qrImg) {
+                if (qrImg.complete && qrImg.naturalWidth > 0) {
+                    drawQROnCanvas(qrImg);
+                } else {
+                    qrImg.onload = () => drawQROnCanvas(qrImg);
+                    qrImg.onerror = () => drawQROnCanvas(null);
+                }
+            } else {
+                drawQROnCanvas(null);
+            }
+        }
     };
 
     // Download button handler

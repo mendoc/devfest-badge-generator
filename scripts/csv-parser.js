@@ -23,9 +23,11 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         csvUploadArea.classList.remove('active');
         const file = e.dataTransfer.files[0];
-        if (file && file.name.endsWith('.csv')) {
+        if (file && (file.name.endsWith('.csv') || file.type === 'text/csv')) {
             csvInput.files = e.dataTransfer.files;
             csvInput.dispatchEvent(new Event('change'));
+        } else if (file) {
+            showStatus('csvStatus', `⚠ Fichier non reconnu : "${file.name}". Veuillez déposer un fichier .csv`, 'warning');
         }
     });
 

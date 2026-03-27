@@ -80,6 +80,16 @@ input[type="file"] {
     background: var(--bg-primary);
 }
 
+.btn-danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--error);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.25);
+}
+
 /* Select */
 .select-wrapper {
     position: relative;

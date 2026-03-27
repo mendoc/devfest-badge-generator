@@ -6,7 +6,7 @@
     --border-color: #2d3139;
     --text-primary: #e5e7eb;
     --text-secondary: #9ca3af;
-    --text-muted: #6b7280;
+    --text-muted: #8a92a0; /* Bumped for WCAG AA contrast on dark background */
     --accent-primary: #6366f1;
     --accent-hover: #4f46e5;
     --accent-light: rgba(99, 102, 241, 0.1);
@@ -139,11 +139,6 @@ body {
     border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-/* Utility */
-.hidden {
-    display: none;
-}
-
 .loading {
     display: inline-block;
     width: 1rem;
@@ -178,6 +173,11 @@ body {
 
 .modal.hidden {
     display: none;
+}
+
+/* Confirm dialog must appear above all other modals (including template editor at z-index 2000) */
+#confirmDialog {
+    z-index: 3000;
 }
 
 .modal-overlay {
